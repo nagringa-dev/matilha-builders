@@ -19,7 +19,7 @@
 	);
 </script>
 
-<div class="mx-auto max-w-4xl px-4 py-8 md:px-6">
+<div class="px-4 py-8 md:px-6">
 	<div
 		class="mb-6 flex items-end justify-between gap-4 border-border border-b pb-5"
 	>
@@ -40,7 +40,7 @@
 	{:else if !founders.length}
 		<p class="text-sm text-muted-foreground">Ninguém na matilha ainda.</p>
 	{:else}
-		<div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
+		<div class="grid grid-cols-[repeat(auto-fill,minmax(440px,1fr))] gap-3">
 			{#each founders as founder, index (founder.userId)}
 				<FounderCard {founder} {index} />
 			{/each}

@@ -94,7 +94,7 @@
 	<ProductChip
 		product={{ ...product, imageUrl: previewImageUrl ?? product.imageUrl }}
 		showStatus={!isOwnProfile}
-		size="md"
+		size="lg"
 		variant="cover"
 	/>
 	{#if isOwnProfile}

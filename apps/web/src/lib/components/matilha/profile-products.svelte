@@ -362,7 +362,7 @@
 					</AnimatePresence>
 					{#if founder.products.length}
 						<div
-							class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3"
+							class="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3 xl:grid-cols-[repeat(auto-fill,minmax(340px,500px))]"
 						>
 							<AnimatePresence mode="popLayout">
 								{#each founder.products as product, index (product._key ?? product.id)}

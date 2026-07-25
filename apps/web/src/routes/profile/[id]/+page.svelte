@@ -148,12 +148,12 @@
 </script>
 
 {#if founderQuery.isLoading}
-	<div class="mx-auto max-w-4xl px-4 py-6 md:px-6">
+	<div class="px-4 py-6 md:px-6">
 		<Loader size="sm" subtitle="Buscando o perfil" title="Carregando..." />
 	</div>
 {:else if founderQuery.data}
 	{@const founder = founderQuery.data as FounderData}
-	<div class="mx-auto max-w-4xl px-4 py-6 md:px-6">
+	<div class="px-4 py-6 md:px-6">
 		<ProfileHeader
 			{avatarPreview}
 			{founder}
