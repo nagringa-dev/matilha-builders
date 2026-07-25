@@ -7,9 +7,11 @@
 	import "../app.css";
 	import { authClient } from "$lib/auth-client";
 	import { Loader } from "$lib/components/ui/loader/index.js";
+	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
 	import { Toaster } from "$lib/components/ui/sonner/index.js";
 	import { queryClient } from "$lib/orpc";
-	import Header from "../components/header.svelte";
+	import AppSidebar from "../components/app-sidebar.svelte";
+	import MobileHeader from "../components/mobile-header.svelte";
 
 	const { children } = $props();
 	const isLoginRoute = $derived(page.url.pathname === "/login");
@@ -88,12 +90,15 @@
 				</button>
 			</motion.div>
 		{:else if isAuthorized}
-			<div class="grid h-svh grid-rows-[auto_1fr]">
-				<Header />
-				<main class="overflow-y-auto">
-					{@render children()}
-				</main>
-			</div>
+			<Sidebar.Provider class="h-svh">
+				<AppSidebar />
+				<Sidebar.Inset class="flex flex-col overflow-hidden">
+					<MobileHeader />
+					<main class="overflow-y-auto">
+						{@render children()}
+					</main>
+				</Sidebar.Inset>
+			</Sidebar.Provider>
 		{:else}
 			<div
 				class="flex h-svh items-center justify-center text-sm text-muted-foreground"
