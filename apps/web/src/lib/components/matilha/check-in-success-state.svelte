@@ -5,7 +5,7 @@
 	let { streak }: { streak: number } = $props();
 </script>
 
-<div class="mx-auto max-w-4xl px-4 py-12 md:px-6">
+<div class="mx-auto max-w-2xl px-4 py-12 md:px-6">
 	<motion.div
 		animate={{ opacity: 1, scale: 1 }}
 		class="text-center"
