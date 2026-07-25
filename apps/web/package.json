@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@internationalized/date": "^3.12.2",
-    "@lucide/svelte": "^1.25.0",
+    "@lucide/svelte": "^1.26.0",
     "@matilha-builders/config": "workspace:*",
     "@sveltejs/adapter-auto": "^7.0.1",
     "@sveltejs/adapter-vercel": "^6.3.4",
