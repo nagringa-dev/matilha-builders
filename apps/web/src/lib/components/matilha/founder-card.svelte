@@ -97,7 +97,7 @@
 									type="button"
 								>
 									<ProductChip
-										class="pointer-events-none transition-colors group-hover:border-streak/50 group-hover:bg-streak/10"
+										class="transition-colors group-hover:border-streak/50 group-hover:bg-streak/10"
 										product={p}
 										showImage={false}
 										variant="tag"

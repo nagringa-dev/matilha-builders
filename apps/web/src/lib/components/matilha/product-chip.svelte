@@ -2,6 +2,7 @@
 	import { motion } from "@humanspeak/svelte-motion";
 	import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
 	import * as Drawer from "$lib/components/ui/drawer/index.js";
+	import * as Tooltip from "$lib/components/ui/tooltip/index.js";
 	import { cn } from "$lib/utils.js";
 
 	type Status = "validating" | "building" | "launched";
@@ -53,7 +54,9 @@
 					: "text-base"
 	);
 	const captionTextClass = $derived(size === "sm" ? "text-sm" : "text-[15px]");
-	const coverHeight = $derived(size === "lg" ? "h-56" : "h-50");
+	const coverHeight = $derived(
+		size === "lg" ? "h-56 xl:h-[254px]" : "h-50 xl:h-[230px]"
+	);
 
 	const statusLabels: Record<Status, string> = {
 		building: "construindo",
@@ -68,6 +71,10 @@
 	};
 
 	const initial = $derived((product.name || "?").charAt(0).toUpperCase());
+
+	const tagDisplayName = $derived(
+		product.name.length > 10 ? `${product.name.slice(0, 10)}…` : product.name
+	);
 
 	const detailSections = $derived(
 		[
@@ -185,39 +192,47 @@
 {/snippet}
 
 {#if variant === "tag"}
-	<span
-		class={cn(
-			"inline-flex items-center gap-1.5 rounded-full border border-border bg-card/60 py-0.5 pr-2.5 text-xs font-medium",
-			showImage ? "pl-0.5" : "pl-2.5",
-			className
-		)}
-	>
-		{#if showImage}
-			{@render thumb()}
-		{/if}
-		{#if product.link}
-			<a
-				class="flex items-center gap-0.5 underline decoration-muted-foreground/40 underline-offset-2 transition-colors hover:text-streak hover:decoration-streak"
-				href={product.link}
-				onclick={(e) => e.stopPropagation()}
-				rel="noreferrer"
-				target="_blank"
-			>
-				{product.name}
-				<ExternalLinkIcon class="size-3 shrink-0" />
-			</a>
-		{:else}
-			{product.name}
-		{/if}
-		{#if product.status}
-			<span class="flex items-center gap-1 text-muted-foreground">
+	<Tooltip.Root>
+		<Tooltip.Trigger>
+			{#snippet child({ props })}
 				<span
-					class={cn("size-1.5 rounded-full", dotStyles[product.status])}
-				></span>
-				{statusLabels[product.status]}
-			</span>
-		{/if}
-	</span>
+					{...props}
+					class={cn(
+						"inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-card/60 py-0.5 pr-2.5 text-left text-xs font-medium",
+						showImage ? "pl-0.5" : "pl-2.5",
+						className
+					)}
+				>
+					{#if showImage}
+						{@render thumb()}
+					{/if}
+					{#if product.link}
+						<a
+							class="flex items-center gap-0.5 underline decoration-muted-foreground/40 underline-offset-2 transition-colors hover:text-streak hover:decoration-streak"
+							href={product.link}
+							onclick={(e) => e.stopPropagation()}
+							rel="noreferrer"
+							target="_blank"
+						>
+							<span>{tagDisplayName}</span>
+							<ExternalLinkIcon class="size-3 shrink-0" />
+						</a>
+					{:else}
+						<span>{tagDisplayName}</span>
+					{/if}
+					{#if product.status}
+						<span class="flex shrink-0 items-center gap-1 text-muted-foreground">
+							<span
+								class={cn("size-1.5 rounded-full", dotStyles[product.status])}
+							></span>
+							{statusLabels[product.status]}
+						</span>
+					{/if}
+				</span>
+			{/snippet}
+		</Tooltip.Trigger>
+		<Tooltip.Content>{product.name}</Tooltip.Content>
+	</Tooltip.Root>
 {:else if variant === "tile"}
 	<div class={cn("flex items-center gap-3", className)}>
 		{#if showImage}
