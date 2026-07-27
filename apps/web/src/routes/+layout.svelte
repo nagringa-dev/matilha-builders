@@ -14,7 +14,8 @@
 	import MobileHeader from "../components/mobile-header.svelte";
 
 	const { children } = $props();
-	const isLoginRoute = $derived(page.url.pathname === "/login");
+	const publicRoutes = ["/login", "/forgot-password", "/reset-password"];
+	const isLoginRoute = $derived(publicRoutes.includes(page.url.pathname));
 	const sessionQuery = authClient.useSession();
 	const approvalStatus = $derived($sessionQuery.data?.user.approvalStatus);
 	const isPendingApproval = $derived(

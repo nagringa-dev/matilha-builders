@@ -138,6 +138,13 @@
 				{/snippet}
 			</form.Field>
 
+			<a
+				class="-mt-2 text-right text-sm text-muted-foreground transition-colors hover:text-foreground"
+				href="/forgot-password"
+			>
+				Esqueci minha senha
+			</a>
+
 			<form.Subscribe
 				selector={(state: typeof form.state): SubmitState => ({ canSubmit: state.canSubmit, isSubmitting: state.isSubmitting })}
 			>

@@ -34,7 +34,9 @@
 		<div
 			class="flex items-center justify-between group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-3"
 		>
-			<Sidebar.Menu class="w-auto flex-1 group-data-[collapsible=icon]:flex-none">
+			<Sidebar.Menu
+				class="w-auto flex-1 group-data-[collapsible=icon]:flex-none"
+			>
 				<Sidebar.MenuItem>
 					<Sidebar.MenuButton size="lg">
 						{#snippet child({ props })}

@@ -28,6 +28,11 @@ export function createAuth() {
 		},
 		emailAndPassword: {
 			enabled: true,
+			sendResetPassword: async ({ user, url }) => {
+				console.log(
+					`[auth] Link de redefinição de senha para ${user.email}: ${url}`
+				);
+			},
 		},
 		plugins: [],
 		secret: env.BETTER_AUTH_SECRET,
