@@ -83,12 +83,10 @@
 	exit={{ opacity: 0, scale: 0.96 }}
 	initial={{ opacity: 0, scale: 0.96, y: 8 }}
 	key={itemKey}
-	layout
 	transition={{
 		delay: index * 0.04,
 		duration: 0.2,
 		ease: [0.23, 1, 0.32, 1],
-		layout: { duration: 0.2, ease: [0.77, 0, 0.175, 1] },
 	}}
 >
 	<ProductChip
