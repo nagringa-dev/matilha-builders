@@ -7,13 +7,16 @@
 		useQueryClient,
 	} from "@tanstack/svelte-query";
 	import { z } from "zod";
+	import { replaceState } from "$app/navigation";
 	import { page } from "$app/state";
 	import { authClient } from "$lib/auth-client";
 	import FormInputField from "$lib/components/matilha/form-input-field.svelte";
 	import FormTextareaField from "$lib/components/matilha/form-textarea-field.svelte";
 	import ProfileCheckInHistory from "$lib/components/matilha/profile-check-in-history.svelte";
+	import ProfileFeaturedProduct from "$lib/components/matilha/profile-featured-product.svelte";
 	import ProfileHeader from "$lib/components/matilha/profile-header.svelte";
 	import ProfileProducts from "$lib/components/matilha/profile-products.svelte";
+	import ProfileTimeline from "$lib/components/matilha/profile-timeline.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import {
 		Drawer,
@@ -24,8 +27,13 @@
 		DrawerTitle,
 	} from "$lib/components/ui/drawer/index.js";
 	import { Loader } from "$lib/components/ui/loader/index.js";
-	import { Separator } from "$lib/components/ui/separator/index.js";
 	import { toast } from "$lib/components/ui/sonner/index.js";
+	import {
+		Tabs,
+		TabsContent,
+		TabsList,
+		TabsTrigger,
+	} from "$lib/components/ui/tabs/index.js";
 	import { orpc } from "$lib/orpc";
 
 	const founderId = $derived(page.params.id ?? "");
@@ -44,6 +52,11 @@
 	const history = $derived(
 		historyQuery.data?.pages.flatMap((historyPage) => historyPage.items) ?? []
 	);
+	const featuredProduct = $derived(
+		founderQuery.data?.products.find(
+			(product) => product.id === founderQuery.data?.featuredProductId
+		) ?? null
+	);
 
 	type FounderData = NonNullable<typeof founderQuery.data>;
 	type SubmitState = Pick<
@@ -53,8 +66,29 @@
 
 	const queryClient = useQueryClient();
 	let avatarPreview = $state<string | null>(null);
-	let checkInsOpen = $state(true);
 	let showEditProfile = $state(false);
+
+	const tabs = ["geral", "produtos", "check-ins"] as const;
+	type ProfileTab = (typeof tabs)[number];
+
+	function parseTab(value: string | null): ProfileTab {
+		return tabs.includes(value as ProfileTab) ? (value as ProfileTab) : "geral";
+	}
+
+	let activeTab = $state<ProfileTab>(
+		parseTab(page.url.searchParams.get("tab"))
+	);
+
+	function selectTab(value: string) {
+		activeTab = parseTab(value);
+		const url = new URL(page.url);
+		if (activeTab === "geral") {
+			url.searchParams.delete("tab");
+		} else {
+			url.searchParams.set("tab", activeTab);
+		}
+		replaceState(url, page.state);
+	}
 
 	function founderQueryKey() {
 		return orpc.founders.get.queryOptions({ input: { founderId } }).queryKey;
@@ -147,6 +181,15 @@
 	}
 </script>
 
+{#snippet tabTrigger(value: ProfileTab, label: string)}
+	<TabsTrigger
+		class="h-auto flex-none px-0 pb-2.5 text-sm after:bottom-0 after:h-[3px] after:rounded-full data-active:font-semibold"
+		{value}
+	>
+		{label}
+	</TabsTrigger>
+{/snippet}
+
 {#if founderQuery.isLoading}
 	<div class="px-4 py-6 md:px-6">
 		<Loader size="sm" subtitle="Buscando o perfil" title="Carregando..." />
@@ -162,6 +205,10 @@
 			onAvatarUploaded={refetchFounder}
 			onEdit={() => openEditProfile(founder.name, founder.bio)}
 		/>
+
+		{#if featuredProduct}
+			<ProfileFeaturedProduct product={featuredProduct} />
+		{/if}
 
 		{#if isOwnProfile}
 			<Drawer bind:open={showEditProfile}>
@@ -224,17 +271,41 @@
 				</DrawerContent>
 			</Drawer>
 		{/if}
+		<Tabs onValueChange={selectTab} value={activeTab}>
+			<TabsList
+				class="h-auto w-full justify-start gap-6 rounded-none border-b border-border p-0"
+				variant="line"
+			>
+				{@render tabTrigger("geral", "Geral")}
+				{@render tabTrigger("produtos", "Produtos")}
+				{@render tabTrigger("check-ins", "Check-ins")}
+			</TabsList>
 
-		<ProfileProducts {founderId} {isOwnProfile} />
-		<Separator class="mb-6" />
-		<ProfileCheckInHistory
-			currentUserId={$sessionQuery.data?.user.id ?? null}
-			founderName={founder.name}
-			hasNextPage={historyQuery.hasNextPage}
-			{history}
-			isFetchingNextPage={historyQuery.isFetchingNextPage}
-			onLoadMore={() => historyQuery.fetchNextPage()}
-			bind:open={checkInsOpen}
-		/>
+			<TabsContent class="pt-5" value="geral">
+				<ProfileTimeline
+					founderName={founder.name}
+					hasNextPage={historyQuery.hasNextPage}
+					{history}
+					isFetchingNextPage={historyQuery.isFetchingNextPage}
+					onLoadMore={() => historyQuery.fetchNextPage()}
+					products={founder.products}
+				/>
+			</TabsContent>
+
+			<TabsContent class="pt-5" value="produtos">
+				<ProfileProducts {founderId} {isOwnProfile} />
+			</TabsContent>
+
+			<TabsContent class="pt-5" value="check-ins">
+				<ProfileCheckInHistory
+					currentUserId={$sessionQuery.data?.user.id ?? null}
+					founderName={founder.name}
+					hasNextPage={historyQuery.hasNextPage}
+					{history}
+					isFetchingNextPage={historyQuery.isFetchingNextPage}
+					onLoadMore={() => historyQuery.fetchNextPage()}
+				/>
+			</TabsContent>
+		</Tabs>
 	</div>
 {/if}

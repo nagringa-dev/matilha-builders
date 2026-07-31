@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { AnimatePresence, motion } from "@humanspeak/svelte-motion";
-	import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
 	import PlusIcon from "@lucide/svelte/icons/plus";
 	import XIcon from "@lucide/svelte/icons/x";
 	import { MAX_PRODUCTS_PER_FOUNDER } from "@matilha-builders/api/lib/constants";
@@ -11,11 +10,6 @@
 	} from "@tanstack/svelte-query";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Card } from "$lib/components/ui/card/index.js";
-	import {
-		Collapsible,
-		CollapsibleContent,
-		CollapsibleTrigger,
-	} from "$lib/components/ui/collapsible/index.js";
 	import { orpc } from "$lib/orpc";
 	import type {
 		ProductFormValues,
@@ -40,7 +34,6 @@
 	type HistoryData = Awaited<ReturnType<typeof historyQueryData>>;
 
 	const queryClient = useQueryClient();
-	let open = $state(true);
 	let showAddProduct = $state(false);
 	let productPreviews = $state<Record<string, string>>({});
 
@@ -297,100 +290,81 @@
 
 {#if founderQuery.data}
 	{@const founder = founderQuery.data as FounderData}
-	<section class="mb-6">
-		<Collapsible bind:open>
-			<CollapsibleTrigger
-				class="group flex w-full cursor-pointer items-center justify-between rounded-lg py-1 text-left"
-			>
-				<h2
-					class="text-sm font-semibold text-muted-foreground transition-colors group-hover:text-foreground"
-				>
-					Produtos
-					<span class="font-normal text-muted-foreground/70">
-						({founder.products.length}/{MAX_PRODUCTS_PER_FOUNDER})
-					</span>
-				</h2>
-				<ChevronDownIcon
-					class="size-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180"
-				/>
-			</CollapsibleTrigger>
-			<CollapsibleContent
-				class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
-			>
-				<div class="pt-3">
-					{#if isOwnProfile}
-						<div class="mb-2.5 flex justify-end">
-							{#if founder.products.length < MAX_PRODUCTS_PER_FOUNDER}
-								<Button
-									onclick={toggleAddProductForm}
-									size="sm"
-									variant={showAddProduct ? "outline" : "default"}
-								>
-									{#if showAddProduct}
-										<XIcon class="size-3.5" />
-										Cancelar
-									{:else}
-										<PlusIcon class="size-3.5" />
-										Novo produto
-									{/if}
-								</Button>
-							{:else}
-								<span class="text-xs text-muted-foreground"
-									>Limite de {MAX_PRODUCTS_PER_FOUNDER} produtos atingido</span
-								>
-							{/if}
-						</div>
-					{/if}
-					<AnimatePresence>
-						{#if isOwnProfile && showAddProduct && founder.products.length < MAX_PRODUCTS_PER_FOUNDER}
-							<motion.div
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, y: -6 }}
-								initial={{ opacity: 0, y: -6 }}
-								key="add-product-panel"
-								transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-							>
-								<Card class="mb-3 border border-border p-4">
-									<ProfileProductEditor
-										initialValues={{ icp: "", link: "", name: "", painPoint: "", solution: "" }}
-										onSubmit={createProductFromForm}
-										submitLabel="Adicionar produto"
-									/>
-								</Card>
-							</motion.div>
+	<section>
+		{#if isOwnProfile}
+			<div class="flex items-center justify-between gap-3 pb-3">
+				<span class="text-xs text-muted-foreground">
+					{founder.products.length}
+					de {MAX_PRODUCTS_PER_FOUNDER} produtos
+				</span>
+				{#if founder.products.length < MAX_PRODUCTS_PER_FOUNDER}
+					<Button
+						onclick={toggleAddProductForm}
+						size="sm"
+						variant={showAddProduct ? "outline" : "default"}
+					>
+						{#if showAddProduct}
+							<XIcon class="size-3.5" />
+							Cancelar
+						{:else}
+							<PlusIcon class="size-3.5" />
+							Novo produto
 						{/if}
+					</Button>
+				{:else}
+					<span class="text-xs text-muted-foreground">Limite atingido</span>
+				{/if}
+			</div>
+		{/if}
+		<div>
+			<AnimatePresence>
+				{#if isOwnProfile && showAddProduct && founder.products.length < MAX_PRODUCTS_PER_FOUNDER}
+					<motion.div
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0, y: -6 }}
+						initial={{ opacity: 0, y: -6 }}
+						key="add-product-panel"
+						transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+					>
+						<Card class="mb-3 border border-border p-4">
+							<ProfileProductEditor
+								initialValues={{ icp: "", link: "", name: "", painPoint: "", solution: "" }}
+								onSubmit={createProductFromForm}
+								submitLabel="Adicionar produto"
+							/>
+						</Card>
+					</motion.div>
+				{/if}
+			</AnimatePresence>
+			{#if founder.products.length}
+				<div
+					class="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3 xl:grid-cols-2 2xl:grid-cols-[repeat(auto-fill,minmax(340px,500px))]"
+				>
+					<AnimatePresence>
+						{#each founder.products as product, index (product._key ?? product.id)}
+							<ProfileProductCard
+								{index}
+								isDeleting={deleteProduct.isPending}
+								isFeatured={founder.featuredProductId === product.id}
+								{isOwnProfile}
+								itemKey={product._key ?? product.id}
+								onDelete={(id) => deleteProduct.mutate({ id })}
+								onFeature={toggleFeatured}
+								onImagePreview={updatePreview}
+								onImageUploaded={refetchFounder}
+								onStatusChange={(id, status) => updateProduct.mutate({ id, status })}
+								onUpdate={updateProductFromForm}
+								previewImageUrl={productPreviews[product.id]}
+								{product}
+							/>
+						{/each}
 					</AnimatePresence>
-					{#if founder.products.length}
-						<div
-							class="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3 xl:grid-cols-2 2xl:grid-cols-[repeat(auto-fill,minmax(340px,500px))]"
-						>
-							<AnimatePresence mode="popLayout">
-								{#each founder.products as product, index (product._key ?? product.id)}
-									<ProfileProductCard
-										{index}
-										isDeleting={deleteProduct.isPending}
-										isFeatured={founder.featuredProductId === product.id}
-										{isOwnProfile}
-										itemKey={product._key ?? product.id}
-										onDelete={(id) => deleteProduct.mutate({ id })}
-										onFeature={toggleFeatured}
-										onImagePreview={updatePreview}
-										onImageUploaded={refetchFounder}
-										onStatusChange={(id, status) => updateProduct.mutate({ id, status })}
-										onUpdate={updateProductFromForm}
-										previewImageUrl={productPreviews[product.id]}
-										{product}
-									/>
-								{/each}
-							</AnimatePresence>
-						</div>
-					{:else}
-						<p class="text-sm text-muted-foreground">
-							{isOwnProfile ? "Cadastra teu primeiro produto." : "Sem produtos ainda."}
-						</p>
-					{/if}
 				</div>
-			</CollapsibleContent>
-		</Collapsible>
+			{:else}
+				<p class="text-sm text-muted-foreground">
+					{isOwnProfile ? "Cadastra teu primeiro produto." : "Sem produtos ainda."}
+				</p>
+			{/if}
+		</div>
 	</section>
 {/if}
