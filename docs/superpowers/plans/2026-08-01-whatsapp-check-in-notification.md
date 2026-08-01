@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- **No hardcoded values.** The endpoint, group id and secret are read from the environment with **no fallback defaults**. Never write `https://whatsapp.nagringa.dev/...` or a `@g.us` group id into any file under version control.
+- **No hardcoded values.** The endpoint, group id and secret are read from the environment with **no fallback defaults**. The literal endpoint URL and group id must never appear in any file under version control — including this plan.
 - All three env vars are optional in the schema; if **any** is missing, skip the send silently.
 - Sends happen in **every** environment — no `VERCEL_ENV` gate. This is deliberate.
 - Only `checkIns.create` notifies. `checkIns.update` and dismissal send nothing.
@@ -39,7 +39,7 @@
 - Consumes: nothing
 - Produces: `env.WHATSAPP_API_SECRET`, `env.WHATSAPP_API_URL`, `env.WHATSAPP_GROUP_ID`, each typed `string | undefined`
 
-- [ ] **Step 1: Add the three optional vars to the server schema**
+- [x] **Step 1: Add the three optional vars to the server schema**
 
 In `packages/env/src/server.ts`, inside the `server: { ... }` object, add these three entries. Keep the existing keys alphabetically ordered — insert after `UPLOADTHING_TOKEN`:
 
@@ -52,7 +52,7 @@ In `packages/env/src/server.ts`, inside the `server: { ... }` object, add these 
 
 Do not add `.default(...)` to any of them. The values live in `apps/web/.env` only.
 
-- [ ] **Step 2: Verify the schema still loads**
+- [x] **Step 2: Verify the schema still loads**
 
 Run from the repo root:
 
@@ -62,7 +62,7 @@ cd apps/web && pnpm check
 
 Expected: `0 ERRORS`. If it reports a missing env var, the `.optional()` was omitted somewhere.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add packages/env/src/server.ts
@@ -93,7 +93,7 @@ git commit -m "feat(env): declare WhatsApp notification variables"
   export function formatCheckInMessage(input: CheckInMessageInput): string;
   ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `packages/api/src/lib/whatsapp.test.ts`:
 
@@ -168,7 +168,7 @@ describe("formatCheckInMessage", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 pnpm vitest run src/lib/whatsapp.test.ts
@@ -176,7 +176,7 @@ pnpm vitest run src/lib/whatsapp.test.ts
 
 Expected: FAIL — `Failed to load .../whatsapp` (the module does not exist yet).
 
-- [ ] **Step 3: Write the formatter**
+- [x] **Step 3: Write the formatter**
 
 Create `packages/api/src/lib/whatsapp.ts`:
 
@@ -220,7 +220,7 @@ export function formatCheckInMessage(input: CheckInMessageInput): string {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 pnpm vitest run src/lib/whatsapp.test.ts
@@ -228,7 +228,7 @@ pnpm vitest run src/lib/whatsapp.test.ts
 
 Expected: PASS, 7 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/api/src/lib/whatsapp.ts packages/api/src/lib/whatsapp.test.ts
@@ -254,7 +254,7 @@ git commit -m "feat(whatsapp): format the check-in group announcement"
   `env.WHATSAPP_API_SECRET` and `env.CORS_ORIGIN` internally, so callers pass
   no configuration.
 
-- [ ] **Step 1: Add the sender**
+- [x] **Step 1: Add the sender**
 
 Append to `packages/api/src/lib/whatsapp.ts`. Add the import at the top of the file, above the type declaration:
 
@@ -316,7 +316,7 @@ export async function notifyCheckIn(
 }
 ```
 
-- [ ] **Step 2: Verify types and lint**
+- [x] **Step 2: Verify types and lint**
 
 ```bash
 cd ../../apps/web && pnpm check && cd ../../packages/api
@@ -325,7 +325,7 @@ pnpm exec ultracite check src/lib/whatsapp.ts
 
 Expected: `0 ERRORS` from svelte-check. If ultracite objects to `console.error`, check whether the repo bans it elsewhere — `packages/api` has no logger, so `console.error` is the established option. If the rule fires, add a targeted `// biome-ignore lint/suspicious/noConsole: no logger in this package` above each call.
 
-- [ ] **Step 3: Run the existing tests to confirm nothing regressed**
+- [x] **Step 3: Run the existing tests to confirm nothing regressed**
 
 ```bash
 pnpm test
@@ -333,7 +333,7 @@ pnpm test
 
 Expected: PASS — 26 tests (19 existing + 7 from Task 2).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add packages/api/src/lib/whatsapp.ts
@@ -351,7 +351,7 @@ git commit -m "feat(whatsapp): post announcements without failing the caller"
 - Consumes: nothing
 - Produces: `requireOwnedProduct(productId, founderId)` now resolves to `string` — the product's name — instead of `void`
 
-- [ ] **Step 1: Select and return the name**
+- [x] **Step 1: Select and return the name**
 
 Replace the body of `requireOwnedProduct` in `packages/api/src/routers/matilha.ts`:
 
@@ -371,7 +371,7 @@ async function requireOwnedProduct(productId: string, founderId: string) {
 
 This avoids a second query for the name in Task 5. Existing callers ignore the return value, so nothing else changes.
 
-- [ ] **Step 2: Run the tests**
+- [x] **Step 2: Run the tests**
 
 ```bash
 pnpm test
@@ -379,7 +379,7 @@ pnpm test
 
 Expected: PASS — 26 tests. No behaviour changed; only the return type widened.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add packages/api/src/routers/matilha.ts
@@ -398,7 +398,7 @@ git commit -m "refactor(api): return the product name from requireOwnedProduct"
 - Consumes: `notifyCheckIn` from Task 3, `requireOwnedProduct` returning `string` from Task 4
 - Produces: nothing new — `checkIns.create` still resolves to `{ streak: number }`
 
-- [ ] **Step 1: Teach the database mock about the product name**
+- [x] **Step 1: Teach the database mock about the product name**
 
 Task 4 made `requireOwnedProduct` select `name` alongside `founderId`. The test's fake Drizzle surface still returns only `founderId`, so `row.name` would come back `undefined` and the mock would no longer match the real schema.
 
@@ -410,7 +410,7 @@ In `packages/api/src/routers/matilha.test.ts`, inside `vi.hoisted`, update the `
 			} else if (keys.includes("createdAt")) {
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 In the same file, add a mock for the WhatsApp module. Put this **immediately after** the existing `vi.mock("@matilha-builders/db", ...)` line:
 
@@ -463,7 +463,7 @@ Then add these two tests inside the existing `describe("checkIns.create", ...)` 
 
 The second test is the important one: it encodes the invariant that a WhatsApp outage never costs a founder their check-in.
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 ```bash
 pnpm vitest run src/routers/matilha.test.ts
@@ -471,7 +471,7 @@ pnpm vitest run src/routers/matilha.test.ts
 
 Expected: FAIL — the first with `expected "spy" to be called`, the second with `whatsapp is down` propagating out of the handler.
 
-- [ ] **Step 4: Wire the notification into the handler**
+- [x] **Step 4: Wire the notification into the handler**
 
 In `packages/api/src/routers/matilha.ts`, add the import alongside the other `../lib/` imports:
 
@@ -531,7 +531,7 @@ Then change the `checkIns.create` handler. Capture the product name from the own
 			}),
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 ```bash
 pnpm test
@@ -539,7 +539,7 @@ pnpm test
 
 Expected: PASS — 28 tests.
 
-- [ ] **Step 6: Verify types**
+- [x] **Step 6: Verify types**
 
 ```bash
 cd ../../apps/web && pnpm check && cd ../../packages/api
@@ -547,7 +547,7 @@ cd ../../apps/web && pnpm check && cd ../../packages/api
 
 Expected: `0 ERRORS`. If `context.session.user.name` errors, inspect the session type in `packages/api/src/context.ts` and use the field better-auth actually exposes.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add packages/api/src/routers/matilha.ts packages/api/src/routers/matilha.test.ts
@@ -564,17 +564,21 @@ git commit -m "feat(checkin): announce new check-ins in the WhatsApp group"
 - Consumes: everything above
 - Produces: nothing
 
-- [ ] **Step 1: Scan the repository for the literal values**
+- [x] **Step 1: Scan the repository for the literal values**
 
-From the repo root:
+From the repo root. The patterns are read out of `apps/web/.env` at runtime, so the values being hunted for are never written into this plan either:
 
 ```bash
-git grep -nE "nagringa|@g\.us" -- . ':!*.env' || echo "CLEAN: no literals tracked"
+url=$(grep '^WHATSAPP_API_URL=' apps/web/.env | cut -d= -f2- | tr -d '"')
+gid=$(grep '^WHATSAPP_GROUP_ID=' apps/web/.env | cut -d= -f2- | tr -d '"')
+host=$(printf '%s' "$url" | sed -E 's#https?://([^/]+).*#\1#')
+git grep -nF -e "$host" -e "$gid" -- . ':!*.env' \
+  || echo "CLEAN: no literals tracked"
 ```
 
 Expected: `CLEAN: no literals tracked`. Any hit is a Global Constraints violation — replace it with an env read before continuing.
 
-- [ ] **Step 2: Confirm the env file is still ignored**
+- [x] **Step 2: Confirm the env file is still ignored**
 
 ```bash
 git check-ignore -v apps/web/.env
@@ -583,7 +587,7 @@ git log --oneline --all -- apps/web/.env
 
 Expected: the first prints the ignore rule; the second prints nothing.
 
-- [ ] **Step 3: Run the whole suite one last time**
+- [x] **Step 3: Run the whole suite one last time**
 
 ```bash
 cd packages/api && pnpm test
