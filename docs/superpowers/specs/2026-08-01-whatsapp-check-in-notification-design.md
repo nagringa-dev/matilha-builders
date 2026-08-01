@@ -73,15 +73,17 @@ A 4s timeout via `AbortController` bounds the wait, matching the existing conven
 
 ## Configuration
 
-Three variables added to the server schema in `packages/env/src/server.ts`, all optional:
+Three variables added to the server schema in `packages/env/src/server.ts`, all optional strings:
 
-| Variable | Default |
+| Variable | Holds |
 |---|---|
-| `WHATSAPP_API_SECRET` | none — already present in `apps/web/.env` but undeclared |
-| `WHATSAPP_API_URL` | `https://whatsapp.nagringa.dev/send-message` |
-| `WHATSAPP_GROUP_ID` | `120363410464233269@g.us` |
+| `WHATSAPP_API_SECRET` | Credential for the `x-api-secret` header |
+| `WHATSAPP_API_URL` | Endpoint the message is POSTed to |
+| `WHATSAPP_GROUP_ID` | Destination group |
 
-When `WHATSAPP_API_SECRET` is absent the send is skipped silently, so a fresh clone without the secret still posts check-ins normally. This is missing-credential handling, not environment gating.
+**No values are hardcoded — not the endpoint, not the group id.** The code reads all three from the environment and carries no fallback. Baking the endpoint or the group id into a default would put them in the repository, which is exactly what env vars exist to avoid. All three are already set in `apps/web/.env`.
+
+They are declared optional so that a checkout without them still boots. When **any** of the three is missing the send is skipped silently and the check-in proceeds normally. This is missing-configuration handling, not environment gating.
 
 The link is `CORS_ORIGIN` + `/checkin`. `CORS_ORIGIN` is already validated as a URL in the schema and resolves to the Vercel origin in deployed environments.
 
@@ -106,7 +108,7 @@ Only the original `checkIns.create` sends a message.
 | Endpoint unreachable / DNS failure | Check-in saved, error logged |
 | Non-2xx response | Check-in saved, status logged |
 | Timeout (>4s) | Request aborted, check-in saved |
-| `WHATSAPP_API_SECRET` unset | Send skipped, no error |
+| Any of the three env vars unset | Send skipped, no error |
 
 The invariant in every row: **the check-in and the streak are never lost because WhatsApp failed.** The founder's record is the product; the notification is a side effect.
 
