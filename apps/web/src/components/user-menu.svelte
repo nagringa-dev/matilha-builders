@@ -7,8 +7,16 @@
 	import { authClient } from "$lib/auth-client";
 	import Avatar from "$lib/components/matilha/avatar.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
-	import * as Popover from "$lib/components/ui/popover/index.js";
-	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+	import {
+		Popover,
+		PopoverContent,
+		PopoverTrigger,
+	} from "$lib/components/ui/popover/index.js";
+	import {
+		SidebarMenu,
+		SidebarMenuButton,
+		SidebarMenuItem,
+	} from "$lib/components/ui/sidebar/index.js";
 	import { toast } from "$lib/components/ui/sonner/index.js";
 	import { orpc } from "$lib/orpc";
 
@@ -21,10 +29,10 @@
 		enabled: !!currentUserId,
 	}));
 
-	let open = $state(false);
+	let popoverOpen = $state(false);
 
 	async function handleSignOut() {
-		open = false;
+		popoverOpen = false;
 		await authClient.signOut({
 			fetchOptions: {
 				onError: (error) => {
@@ -41,13 +49,13 @@
 	<div class="size-7 animate-pulse rounded-full bg-secondary"></div>
 {:else if $sessionQuery.data?.user}
 	{@const currentUser = $sessionQuery.data.user}
-	<Popover.Root bind:open>
+	<Popover bind:open={popoverOpen}>
 		{#if variant === "full"}
-			<Sidebar.Menu>
-				<Sidebar.MenuItem>
-					<Popover.Trigger class="w-full">
+			<SidebarMenu>
+				<SidebarMenuItem>
+					<PopoverTrigger class="w-full">
 						{#snippet child({ props })}
-							<Sidebar.MenuButton size="lg" {...props}>
+							<SidebarMenuButton size="lg" {...props}>
 								<Avatar
 									name={currentUser.name || currentUser.email || "?"}
 									src={founderQuery.data?.avatarUrl}
@@ -63,26 +71,28 @@
 								<ChevronsUpDownIcon
 									class="ml-auto size-4 text-muted-foreground group-data-[collapsible=icon]:hidden"
 								/>
-							</Sidebar.MenuButton>
+							</SidebarMenuButton>
 						{/snippet}
-					</Popover.Trigger>
-				</Sidebar.MenuItem>
-			</Sidebar.Menu>
+					</PopoverTrigger>
+				</SidebarMenuItem>
+			</SidebarMenu>
 		{:else}
-			<Popover.Trigger
+			<PopoverTrigger
 				class="flex size-7 items-center justify-center rounded-full p-0"
 			>
 				<Avatar
 					name={currentUser.name || currentUser.email || "?"}
 					src={founderQuery.data?.avatarUrl}
 				/>
-			</Popover.Trigger>
+			</PopoverTrigger>
 		{/if}
-		<Popover.Content align="end" class="w-44 gap-1 p-1">
+		<PopoverContent align="end" class="w-44 gap-1 p-1">
 			<a
 				class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-accent"
 				href={`/profile/${currentUser.id}`}
-				onclick={() => (open = false)}
+				onclick={() => {
+					popoverOpen = false;
+				}}
 			>
 				<UserIcon class="size-4" />
 				Perfil
@@ -95,8 +105,8 @@
 				<LogOutIcon class="size-4" />
 				Sair
 			</button>
-		</Popover.Content>
-	</Popover.Root>
+		</PopoverContent>
+	</Popover>
 {:else}
 	<Button href="/login" size="sm">Entrar</Button>
 {/if}

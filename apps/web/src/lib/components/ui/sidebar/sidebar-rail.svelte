@@ -32,6 +32,7 @@
 	onclick={sidebar.toggle}
 	tabindex={-1}
 	title="Toggle Sidebar"
+	type="button"
 	bind:this={ref}
 	{...restProps}
 >

@@ -1,8 +1,8 @@
 import { auth } from "@matilha-builders/auth";
 
-export type CreateContextOptions = {
+export interface CreateContextOptions {
 	headers: Headers;
-};
+}
 
 export async function createContext({ headers }: CreateContextOptions) {
 	const session = await auth.api.getSession({ headers });

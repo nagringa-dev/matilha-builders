@@ -5,25 +5,25 @@
 	import ProductChip from "./product-chip.svelte";
 	import StreakBadge from "./streak-badge.svelte";
 
-	type Product = {
-		id: string;
-		name: string;
-		link: string | null;
-		imageUrl: string | null;
-		status: "validating" | "building" | "launched";
+	interface Product {
 		icp?: string | null;
+		id: string;
+		imageUrl: string | null;
+		link: string | null;
+		name: string;
 		painPoint?: string | null;
 		solution?: string | null;
-	};
+		status: "validating" | "building" | "launched";
+	}
 
-	type Founder = {
-		userId: string;
+	interface Founder {
+		avatarUrl?: string | null;
+		lastCheckInAt: string | Date | null;
 		name: string;
 		products: Product[];
 		streak: number;
-		lastCheckInAt: string | Date | null;
-		avatarUrl?: string | null;
-	};
+		userId: string;
+	}
 
 	let { founder, index = 0 }: { founder: Founder; index?: number } = $props();
 

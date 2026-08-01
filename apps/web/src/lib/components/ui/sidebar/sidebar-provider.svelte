@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { HTMLAttributes } from "svelte/elements";
-	import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+	import { TooltipProvider } from "$lib/components/ui/tooltip/index.js";
 	import { cn, type WithElementRef } from "$lib/utils.js";
 	import {
 		SIDEBAR_COOKIE_MAX_AGE,
@@ -13,7 +13,9 @@
 	let {
 		ref = $bindable(null),
 		open = $bindable(true),
-		onOpenChange = () => {},
+		onOpenChange = () => {
+			// no-op default
+		},
 		class: className,
 		style,
 		children,
@@ -30,6 +32,7 @@
 			onOpenChange(value);
 
 			// This sets the cookie to keep the sidebar state.
+			// biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API isn't universally supported; this needs to work in every browser we target.
 			document.cookie = `${SIDEBAR_COOKIE_NAME}=${open}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
 		},
 	});
@@ -37,7 +40,7 @@
 
 <svelte:window onkeydown={sidebar.handleShortcutKeydown} />
 
-<Tooltip.Provider delayDuration={0}>
+<TooltipProvider delayDuration={0}>
 	<div
 		class={cn(
 			"group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
@@ -50,4 +53,4 @@
 	>
 		{@render children?.()}
 	</div>
-</Tooltip.Provider>
+</TooltipProvider>

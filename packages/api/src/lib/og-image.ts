@@ -100,6 +100,7 @@ export async function fetchOgImage(pageUrl: string): Promise<string | null> {
 		let html = "";
 		let bytesRead = 0;
 		while (bytesRead < MAX_BYTES) {
+			// biome-ignore lint/performance/noAwaitInLoops: each read() depends on the stream cursor from the previous one; the reads are inherently sequential.
 			const { done, value } = await reader.read();
 			if (done) {
 				break;

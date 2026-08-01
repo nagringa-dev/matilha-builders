@@ -19,7 +19,7 @@
 	}: {
 		endpoint: "avatarUploader" | "productImageUploader";
 		label: string;
-		onUploaded: () => Promise<unknown> | void;
+		onUploaded: () => Promise<unknown> | undefined;
 		onPreview?: (url: string | null) => void;
 		input?: { productId: string };
 		iconOnly?: boolean;
@@ -52,7 +52,7 @@
 	});
 
 	function handleChange(e: Event) {
-		const files = (e.target as HTMLInputElement).files;
+		const { files } = e.target as HTMLInputElement;
 		if (files && files.length > 0) {
 			objectUrl = URL.createObjectURL(files[0] as File);
 			onPreview?.(objectUrl);

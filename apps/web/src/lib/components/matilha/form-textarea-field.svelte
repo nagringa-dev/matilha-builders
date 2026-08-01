@@ -36,9 +36,12 @@
 			field.state.meta.isTouched &&
 			Boolean(field.state.meta.errors[0]?.message)
 	);
-	const describedBy = $derived(
-		hasError ? `${field.name}-error` : hint ? `${field.name}-hint` : undefined
-	);
+	const describedBy = $derived.by(() => {
+		if (hasError) {
+			return `${field.name}-error`;
+		}
+		return hint ? `${field.name}-hint` : undefined;
+	});
 </script>
 
 <Field

@@ -37,9 +37,12 @@
 	const hasError = $derived(
 		field.state.meta.isTouched && Boolean(field.state.meta.errors[0]?.message)
 	);
-	const describedBy = $derived(
-		hasError ? `${field.name}-error` : hint ? `${field.name}-hint` : undefined
-	);
+	const describedBy = $derived.by(() => {
+		if (hasError) {
+			return `${field.name}-error`;
+		}
+		return hint ? `${field.name}-hint` : undefined;
+	});
 
 	function maskPhoneBR(value: string): string {
 		const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -92,7 +95,9 @@
 			<button
 				aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
 				class="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-				onclick={() => (showPassword = !showPassword)}
+				onclick={() => {
+					showPassword = !showPassword;
+				}}
 				tabindex={-1}
 				type="button"
 			>

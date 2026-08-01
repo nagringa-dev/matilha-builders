@@ -6,7 +6,15 @@
 </script>
 
 {#if showSignIn}
-	<SignInForm switchToSignUp={() => showSignIn = false} />
+	<SignInForm
+		switchToSignUp={() => {
+			showSignIn = false;
+		}}
+	/>
 {:else}
-	<SignUpForm switchToSignIn={() => showSignIn = true} />
+	<SignUpForm
+		switchToSignIn={() => {
+			showSignIn = true;
+		}}
+	/>
 {/if}

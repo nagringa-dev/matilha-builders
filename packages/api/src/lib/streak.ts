@@ -38,7 +38,7 @@ const EPOCH_TO_MONDAY_OFFSET_DAYS = 3;
  * crossed between them.
  */
 export function weekIndex(date: Date): number {
-	const [year, month, day] = localDateFormatter
+	const [year = 0, month = 0, day = 0] = localDateFormatter
 		.format(date)
 		.split("-")
 		.map(Number);

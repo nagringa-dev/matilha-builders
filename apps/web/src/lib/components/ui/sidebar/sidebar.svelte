@@ -1,6 +1,12 @@
 <script lang="ts">
 	import type { HTMLAttributes } from "svelte/elements";
-	import * as Sheet from "$lib/components/ui/sheet/index.js";
+	import {
+		Sheet,
+		SheetContent,
+		SheetDescription,
+		SheetHeader,
+		SheetTitle,
+	} from "$lib/components/ui/sheet/index.js";
 	import { cn, type WithElementRef } from "$lib/utils.js";
 	import { SIDEBAR_WIDTH_MOBILE } from "./constants.js";
 	import { useSidebar } from "./context.svelte.js";
@@ -34,11 +40,11 @@
 		{@render children?.()}
 	</div>
 {:else if sidebar.isMobile}
-	<Sheet.Root
+	<Sheet
 		bind:open={() => sidebar.openMobile, (v) => sidebar.setOpenMobile(v)}
 		{...restProps}
 	>
-		<Sheet.Content
+		<SheetContent
 			class={cn(
 				"bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden",
 				className
@@ -50,15 +56,15 @@
 			style="--sidebar-width: {SIDEBAR_WIDTH_MOBILE};"
 			bind:ref
 		>
-			<Sheet.Header class="sr-only">
-				<Sheet.Title>Sidebar</Sheet.Title>
-				<Sheet.Description>Displays the mobile sidebar.</Sheet.Description>
-			</Sheet.Header>
+			<SheetHeader class="sr-only">
+				<SheetTitle>Sidebar</SheetTitle>
+				<SheetDescription>Displays the mobile sidebar.</SheetDescription>
+			</SheetHeader>
 			<div class="flex h-full w-full flex-col">
 				{@render children?.()}
 			</div>
-		</Sheet.Content>
-	</Sheet.Root>
+		</SheetContent>
+	</Sheet>
 {:else}
 	<div
 		class="text-sidebar-foreground group peer hidden md:block"

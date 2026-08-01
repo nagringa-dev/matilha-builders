@@ -46,8 +46,8 @@ export const queryClient = new QueryClient({
 });
 
 export const link = new RPCLink({
-	fetch(url, options) {
-		return fetch(url, {
+	fetch(_url, options) {
+		return fetch(_url, {
 			...options,
 			credentials: "include",
 		});

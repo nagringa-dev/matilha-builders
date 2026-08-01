@@ -33,7 +33,11 @@
 	import { mergeProps } from "bits-ui";
 	import type { ComponentProps, Snippet } from "svelte";
 	import type { HTMLAttributes } from "svelte/elements";
-	import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+	import {
+		Tooltip,
+		TooltipContent,
+		TooltipTrigger,
+	} from "$lib/components/ui/tooltip/index.js";
 	import {
 		cn,
 		type WithElementRef,
@@ -58,7 +62,7 @@
 		size?: SidebarMenuButtonSize;
 		tooltipContent?: Snippet | string;
 		tooltipContentProps?: WithoutChildrenOrChild<
-			ComponentProps<typeof Tooltip.Content>
+			ComponentProps<typeof TooltipContent>
 		>;
 		child?: Snippet<[{ props: Record<string, unknown> }]>;
 	} = $props();
@@ -80,7 +84,7 @@
 	{#if child}
 		{@render child({ props: mergedProps })}
 	{:else}
-		<button bind:this={ref} {...mergedProps}>
+		<button type="button" bind:this={ref} {...mergedProps}>
 			{@render children?.()}
 		</button>
 	{/if}
@@ -89,13 +93,13 @@
 {#if !tooltipContent}
 	{@render Button({})}
 {:else}
-	<Tooltip.Root>
-		<Tooltip.Trigger>
+	<Tooltip>
+		<TooltipTrigger>
 			{#snippet child({ props })}
 				{@render Button({ props })}
 			{/snippet}
-		</Tooltip.Trigger>
-		<Tooltip.Content
+		</TooltipTrigger>
+		<TooltipContent
 			align="center"
 			hidden={sidebar.state !== "collapsed" || sidebar.isMobile}
 			side="right"
@@ -106,6 +110,6 @@
 			{:else if tooltipContent}
 				{@render tooltipContent()}
 			{/if}
-		</Tooltip.Content>
-	</Tooltip.Root>
+		</TooltipContent>
+	</Tooltip>
 {/if}

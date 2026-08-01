@@ -15,7 +15,12 @@
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Card } from "$lib/components/ui/card/index.js";
 	import { Loader } from "$lib/components/ui/loader/index.js";
-	import * as Select from "$lib/components/ui/select/index.js";
+	import {
+		Select,
+		SelectContent,
+		SelectItem,
+		SelectTrigger,
+	} from "$lib/components/ui/select/index.js";
 	import { Textarea } from "$lib/components/ui/textarea/index.js";
 	import { orpc } from "$lib/orpc";
 
@@ -32,7 +37,7 @@
 	let optimisticStreak = $state(0);
 	let submitError = $state(false);
 
-	type ProductRef = {
+	interface ProductRef {
 		createdAt: Date;
 		founderId: string;
 		icp: string | null;
@@ -44,8 +49,8 @@
 		solution: string | null;
 		status: "building" | "launched" | "validating";
 		updatedAt: Date;
-	};
-	type FeedItem = {
+	}
+	interface FeedItem {
 		avatarUrl: string | null;
 		blocked: string;
 		createdAt: Date;
@@ -59,8 +64,8 @@
 		progress: string;
 		streak: number;
 		voteCount: number;
-	};
-	type HistoryItem = {
+	}
+	interface HistoryItem {
 		blocked: string;
 		createdAt: Date;
 		dismissedAt: Date | null;
@@ -70,10 +75,16 @@
 		product: ProductRef | null;
 		productId: string | null;
 		progress: string;
-	};
+	}
 
-	type Page<T> = { items: T[]; nextCursor: number | undefined };
-	type Paginated<T> = { pageParams: number[]; pages: Page<T>[] };
+	interface Page<T> {
+		items: T[];
+		nextCursor: number | undefined;
+	}
+	interface Paginated<T> {
+		pageParams: number[];
+		pages: Page<T>[];
+	}
 
 	function feedKey() {
 		return orpc.checkIns.listFeed.infiniteKey({
@@ -300,23 +311,23 @@
 						<form.Field name="productId">
 							{#snippet children(field)}
 								<Field label="Sobre qual produto">
-									<Select.Root
+									<Select
 										onValueChange={(v) => field.handleChange(v ?? "")}
 										type="single"
 										value={field.state.value}
 									>
-										<Select.Trigger class="w-full">
+										<SelectTrigger class="w-full">
 											{products.find((p) => p.id === field.state.value)
 												?.name ?? "Escolher produto"}
-										</Select.Trigger>
-										<Select.Content>
+										</SelectTrigger>
+										<SelectContent>
 											{#each products as p (p.id)}
-												<Select.Item label={p.name} value={p.id}>
+												<SelectItem label={p.name} value={p.id}>
 													{p.name}
-												</Select.Item>
+												</SelectItem>
 											{/each}
-										</Select.Content>
-									</Select.Root>
+										</SelectContent>
+									</Select>
 								</Field>
 							{/snippet}
 						</form.Field>

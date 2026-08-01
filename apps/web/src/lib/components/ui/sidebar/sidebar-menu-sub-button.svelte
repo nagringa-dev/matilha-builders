@@ -33,5 +33,6 @@
 {#if child}
 	{@render child({ props: mergedProps })}
 {:else}
+	<!-- biome-ignore lint/a11y/useValidAnchor: href is a required prop passed in via mergedProps by every caller -->
 	<a bind:this={ref} {...mergedProps}> {@render children?.()} </a>
 {/if}

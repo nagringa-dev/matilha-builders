@@ -1,4 +1,5 @@
 import { createDb } from "@matilha-builders/db";
+// biome-ignore lint/performance/noNamespaceImport: drizzleAdapter needs the whole schema module shape; named imports break better-auth's additionalFields type inference.
 import * as schema from "@matilha-builders/db/schema/auth";
 import { founder } from "@matilha-builders/db/schema/matilha";
 import { env } from "@matilha-builders/env/server";
@@ -28,6 +29,7 @@ export function createAuth() {
 		},
 		emailAndPassword: {
 			enabled: true,
+			// biome-ignore lint/suspicious/useAwait: better-auth's sendResetPassword type requires a function that returns a Promise.
 			sendResetPassword: async ({ user, url }) => {
 				console.log(
 					`[auth] Link de redefinição de senha para ${user.email}: ${url}`

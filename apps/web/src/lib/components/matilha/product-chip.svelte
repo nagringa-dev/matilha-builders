@@ -1,22 +1,35 @@
 <script lang="ts">
 	import { motion } from "@humanspeak/svelte-motion";
 	import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
-	import * as Drawer from "$lib/components/ui/drawer/index.js";
-	import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+	import {
+		Drawer,
+		DrawerClose,
+		DrawerContent,
+		DrawerDescription,
+		DrawerFooter,
+		DrawerHeader,
+		DrawerTitle,
+		DrawerTrigger,
+	} from "$lib/components/ui/drawer/index.js";
+	import {
+		Tooltip,
+		TooltipContent,
+		TooltipTrigger,
+	} from "$lib/components/ui/tooltip/index.js";
 	import { cn } from "$lib/utils.js";
 
 	type Status = "validating" | "building" | "launched";
 
-	type Product = {
-		id: string;
-		name: string;
-		link?: string | null;
-		imageUrl?: string | null;
-		status?: Status;
+	interface Product {
 		icp?: string | null;
+		id: string;
+		imageUrl?: string | null;
+		link?: string | null;
+		name: string;
 		painPoint?: string | null;
 		solution?: string | null;
-	};
+		status?: Status;
+	}
 
 	let {
 		product,
@@ -34,24 +47,20 @@
 		class?: string;
 	} = $props();
 
-	const dims = $derived(
-		variant === "tag"
-			? "size-6"
-			: size === "lg"
-				? "size-16"
-				: size === "sm"
-					? "size-8"
-					: "size-12"
-	);
+	const sizeDims: Record<"sm" | "md" | "lg", string> = {
+		lg: "size-16",
+		md: "size-12",
+		sm: "size-8",
+	};
+	const dims = $derived(variant === "tag" ? "size-6" : sizeDims[size]);
 	const radius = $derived(variant === "tag" ? "rounded-md" : "rounded-xl");
+	const sizeInitialText: Record<"sm" | "md" | "lg", string> = {
+		lg: "text-xl",
+		md: "text-base",
+		sm: "text-sm",
+	};
 	const initialSize = $derived(
-		variant === "tag"
-			? "text-xs"
-			: size === "lg"
-				? "text-xl"
-				: size === "sm"
-					? "text-sm"
-					: "text-base"
+		variant === "tag" ? "text-xs" : sizeInitialText[size]
 	);
 	const captionTextClass = $derived(size === "sm" ? "text-sm" : "text-[15px]");
 	const coverHeight = $derived(
@@ -158,25 +167,25 @@
 {/snippet}
 
 {#snippet detailsDrawer()}
-	<Drawer.Root>
-		<Drawer.Trigger
+	<Drawer>
+		<DrawerTrigger
 			class="pointer-events-auto relative self-start text-muted-foreground text-xs underline decoration-muted-foreground/40 underline-offset-2 transition-colors hover:text-foreground hover:decoration-foreground"
 			onclick={(e: MouseEvent) => e.stopPropagation()}
 		>
 			Ver mais sobre
-		</Drawer.Trigger>
-		<Drawer.Content class="mx-auto max-w-fit">
+		</DrawerTrigger>
+		<DrawerContent class="mx-auto max-w-fit">
 			<div
 				class="themed-scrollbar mx-auto min-h-0 w-full max-w-md flex-1 overflow-y-auto"
 			>
-				<Drawer.Header>
-					<Drawer.Title class="text-lg">{product.name}</Drawer.Title>
-					<Drawer.Description>
+				<DrawerHeader>
+					<DrawerTitle class="text-lg">{product.name}</DrawerTitle>
+					<DrawerDescription>
 						{#if product.status}
 							{statusLabels[product.status]}
 						{/if}
-					</Drawer.Description>
-				</Drawer.Header>
+					</DrawerDescription>
+				</DrawerHeader>
 				<div class="flex flex-col gap-4 px-4 pb-6">
 					{#each detailSections as section, index (section.label)}
 						<motion.div
@@ -195,21 +204,21 @@
 						</motion.div>
 					{/each}
 				</div>
-				<Drawer.Footer>
-					<Drawer.Close
+				<DrawerFooter>
+					<DrawerClose
 						class="h-9 w-full rounded-md border border-border text-sm transition-colors hover:bg-accent"
 					>
 						Fechar
-					</Drawer.Close>
-				</Drawer.Footer>
+					</DrawerClose>
+				</DrawerFooter>
 			</div>
-		</Drawer.Content>
-	</Drawer.Root>
+		</DrawerContent>
+	</Drawer>
 {/snippet}
 
 {#if variant === "tag"}
-	<Tooltip.Root>
-		<Tooltip.Trigger>
+	<Tooltip>
+		<TooltipTrigger>
 			{#snippet child({ props })}
 				<span
 					{...props}
@@ -248,9 +257,9 @@
 					{/if}
 				</span>
 			{/snippet}
-		</Tooltip.Trigger>
-		<Tooltip.Content>{product.name}</Tooltip.Content>
-	</Tooltip.Root>
+		</TooltipTrigger>
+		<TooltipContent>{product.name}</TooltipContent>
+	</Tooltip>
 {:else if variant === "tile"}
 	<div class={cn("flex items-center gap-3", className)}>
 		{#if showImage}

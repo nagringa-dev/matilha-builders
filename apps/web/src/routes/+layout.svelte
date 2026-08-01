@@ -7,7 +7,10 @@
 	import "../app.css";
 	import { authClient } from "$lib/auth-client";
 	import { Loader } from "$lib/components/ui/loader/index.js";
-	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+	import {
+		SidebarInset,
+		SidebarProvider,
+	} from "$lib/components/ui/sidebar/index.js";
 	import { Toaster } from "$lib/components/ui/sonner/index.js";
 	import { queryClient } from "$lib/orpc";
 	import AppSidebar from "../components/app-sidebar.svelte";
@@ -39,8 +42,12 @@
 			});
 			// Rapid successive navigations (e.g. auth redirect chains) can abort
 			// an in-flight transition; that's expected, not an app error.
-			transition.ready.catch(() => {});
-			transition.finished.catch(() => {});
+			transition.ready.catch(() => {
+				// expected when a transition is aborted
+			});
+			transition.finished.catch(() => {
+				// expected when a transition is aborted
+			});
 		});
 	});
 
@@ -91,15 +98,15 @@
 				</button>
 			</motion.div>
 		{:else if isAuthorized}
-			<Sidebar.Provider class="h-svh">
+			<SidebarProvider class="h-svh">
 				<AppSidebar />
-				<Sidebar.Inset class="flex flex-col overflow-hidden">
+				<SidebarInset class="flex flex-col overflow-hidden">
 					<MobileHeader />
 					<main class="overflow-y-auto">
 						{@render children()}
 					</main>
-				</Sidebar.Inset>
-			</Sidebar.Provider>
+				</SidebarInset>
+			</SidebarProvider>
 		{:else}
 			<div
 				class="flex h-svh items-center justify-center text-sm text-muted-foreground"

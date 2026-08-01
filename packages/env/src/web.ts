@@ -1,10 +1,11 @@
 import { createEnv } from "@t3-oss/env-core";
-import { z } from "zod";
 
 export const env = createEnv({
 	client: {},
 	clientPrefix: "VITE_",
 	emptyStringAsUndefined: true,
-	runtimeEnv: (import.meta as any).env,
+	runtimeEnv: (
+		import.meta as unknown as { env: Record<string, string | undefined> }
+	).env,
 	skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });

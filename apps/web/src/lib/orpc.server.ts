@@ -11,7 +11,7 @@ if (typeof window !== "undefined") {
 }
 
 const serverClient: AppRouterClient = createRouterClient(appRouter, {
-	context: async () => {
+	context: () => {
 		const event = getRequestEvent();
 		return createContext({
 			headers: event.request.headers,

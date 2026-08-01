@@ -1,3 +1,1 @@
-import Root from "./loader.svelte";
-
-export { Root, Root as Loader };
+export { default as Root, default as Loader } from "./loader.svelte";

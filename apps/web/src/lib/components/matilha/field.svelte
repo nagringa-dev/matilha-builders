@@ -5,7 +5,7 @@
 	let {
 		label,
 		hint,
-		error,
+		error: errorMessage,
 		htmlFor,
 		children,
 	}: {
@@ -22,9 +22,9 @@
 		<Label for={htmlFor}>{label}</Label>
 	{/if}
 	{@render children()}
-	{#if error}
+	{#if errorMessage}
 		<p class="text-sm text-destructive" id="{htmlFor}-error" role="alert">
-			{error}
+			{errorMessage}
 		</p>
 	{:else if hint}
 		<p class="text-xs text-muted-foreground" id="{htmlFor}-hint">{hint}</p>

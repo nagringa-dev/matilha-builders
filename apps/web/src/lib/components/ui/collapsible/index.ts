@@ -1,13 +1,9 @@
-import Root from "./collapsible.svelte";
-import Content from "./collapsible-content.svelte";
-import Trigger from "./collapsible-trigger.svelte";
-
+export { default as Root, default as Collapsible } from "./collapsible.svelte";
 export {
-	Content,
-	Content as CollapsibleContent,
-	Root,
-	//
-	Root as Collapsible,
-	Trigger,
-	Trigger as CollapsibleTrigger,
-};
+	default as Content,
+	default as CollapsibleContent,
+} from "./collapsible-content.svelte";
+export {
+	default as Trigger,
+	default as CollapsibleTrigger,
+} from "./collapsible-trigger.svelte";

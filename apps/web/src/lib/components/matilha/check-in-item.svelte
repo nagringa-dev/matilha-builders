@@ -4,7 +4,17 @@
 	import PencilIcon from "@lucide/svelte/icons/pencil";
 	import { EDIT_WINDOW_MS } from "@matilha-builders/api/lib/streak";
 	import { createMutation, useQueryClient } from "@tanstack/svelte-query";
-	import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
+	import {
+		AlertDialog,
+		AlertDialogAction,
+		AlertDialogCancel,
+		AlertDialogContent,
+		AlertDialogDescription,
+		AlertDialogFooter,
+		AlertDialogHeader,
+		AlertDialogTitle,
+		AlertDialogTrigger,
+	} from "$lib/components/ui/alert-dialog/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { toast } from "$lib/components/ui/sonner/index.js";
 	import { formatRelative } from "$lib/format";
@@ -13,28 +23,28 @@
 	import CheckInEditor from "./check-in-editor.svelte";
 	import ProductChip from "./product-chip.svelte";
 
-	type Product = {
+	interface Product {
 		id: string;
-		name: string;
-		link: string | null;
 		imageUrl: string | null;
+		link: string | null;
+		name: string;
 		status: "validating" | "building" | "launched";
-	};
+	}
 
-	type CheckIn = {
-		id: string;
+	interface CheckIn {
+		avatarUrl?: string | null;
+		blocked: string;
+		createdAt: string | Date;
+		dismissedAt?: string | Date | null;
 		founderId: string;
+		hasVoted?: boolean;
+		help: string | null;
+		id: string;
 		name: string;
 		product: Product | null;
 		progress: string;
-		blocked: string;
-		help: string | null;
-		createdAt: string | Date;
-		avatarUrl?: string | null;
-		dismissedAt?: string | Date | null;
 		voteCount?: number;
-		hasVoted?: boolean;
-	};
+	}
 
 	let {
 		checkIn,
@@ -64,17 +74,21 @@
 
 	const queryClient = useQueryClient();
 
-	type CheckInListItem = {
-		id: string;
-		progress: string;
+	interface CheckInListItem {
 		blocked: string;
 		help: string | null;
-	};
-	type InfiniteCheckIns = {
+		id: string;
+		progress: string;
+	}
+	interface InfiniteCheckIns {
 		pageParams: unknown[];
 		pages: { items: CheckInListItem[]; nextCursor?: number }[];
-	};
-	type EditorValues = { progress: string; blocked: string; help: string };
+	}
+	interface EditorValues {
+		blocked: string;
+		help: string;
+		progress: string;
+	}
 
 	function listKeys() {
 		return [orpc.checkIns.listFeed.key(), orpc.checkIns.listByFounder.key()];
@@ -238,8 +252,8 @@
 					Você votou para desconsiderar · {checkIn.voteCount ?? 0}/5
 				</span>
 			{:else}
-				<AlertDialog.Root bind:open={confirmOpen}>
-					<AlertDialog.Trigger>
+				<AlertDialog bind:open={confirmOpen}>
+					<AlertDialogTrigger>
 						{#snippet child({ props })}
 							<Button
 								{...props}
@@ -257,30 +271,28 @@
 								{/if}
 							</Button>
 						{/snippet}
-					</AlertDialog.Trigger>
-					<AlertDialog.Content>
-						<AlertDialog.Header>
-							<AlertDialog.Title
-								>Desconsiderar esse check-in?</AlertDialog.Title
-							>
-							<AlertDialog.Description>
+					</AlertDialogTrigger>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Desconsiderar esse check-in?</AlertDialogTitle>
+							<AlertDialogDescription>
 								Seu voto conta pra decisão da comunidade. Com 5 votos, o
 								check-in de {checkIn.name} é marcado como desconsiderado e ela
 								perde o streak que ganhou com ele. Essa ação não pode ser
 								desfeita depois de confirmada.
-							</AlertDialog.Description>
-						</AlertDialog.Header>
-						<AlertDialog.Footer>
-							<AlertDialog.Cancel>Cancelar</AlertDialog.Cancel>
-							<AlertDialog.Action
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel>Cancelar</AlertDialogCancel>
+							<AlertDialogAction
 								onclick={() => onDismissVote?.(checkIn.id)}
 								variant="destructive"
 							>
 								Confirmar voto
-							</AlertDialog.Action>
-						</AlertDialog.Footer>
-					</AlertDialog.Content>
-				</AlertDialog.Root>
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
 			{/if}
 		</div>
 	{/if}

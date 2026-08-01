@@ -12,7 +12,11 @@
 	} from "$lib/components/ui/drawer/index.js";
 	import FormTextareaField from "./form-textarea-field.svelte";
 
-	type Values = { progress: string; blocked: string; help: string };
+	interface Values {
+		blocked: string;
+		help: string;
+		progress: string;
+	}
 
 	let {
 		open = $bindable(false),

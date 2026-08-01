@@ -68,7 +68,7 @@
 {#if href}
 	<a
 		aria-disabled={disabled}
-		class={cn(buttonVariants({ variant, size }), className)}
+		class={cn(buttonVariants({ size, variant }), className)}
 		data-slot="button"
 		href={disabled ? undefined : href}
 		role={disabled ? "link" : undefined}
@@ -80,7 +80,7 @@
 	</a>
 {:else}
 	<button
-		class={cn(buttonVariants({ variant, size }), className)}
+		class={cn(buttonVariants({ size, variant }), className)}
 		data-slot="button"
 		{disabled}
 		{type}

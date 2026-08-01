@@ -6,7 +6,18 @@
 	import RssIcon from "@lucide/svelte/icons/rss";
 	import { page } from "$app/state";
 	import { authClient } from "$lib/auth-client";
-	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+	import {
+		Sidebar,
+		SidebarContent,
+		SidebarFooter,
+		SidebarGroup,
+		SidebarHeader,
+		SidebarMenu,
+		SidebarMenuButton,
+		SidebarMenuItem,
+		SidebarRail,
+		SidebarTrigger,
+	} from "$lib/components/ui/sidebar/index.js";
 	import UserMenu from "./user-menu.svelte";
 
 	const sessionQuery = authClient.useSession();
@@ -29,16 +40,16 @@
 	);
 </script>
 
-<Sidebar.Root collapsible="icon">
-	<Sidebar.Header class="pb-4">
+<Sidebar collapsible="icon">
+	<SidebarHeader class="pb-4">
 		<div
 			class="flex items-center justify-between group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-3"
 		>
-			<Sidebar.Menu
+			<SidebarMenu
 				class="w-auto flex-1 group-data-[collapsible=icon]:flex-none"
 			>
-				<Sidebar.MenuItem>
-					<Sidebar.MenuButton size="lg">
+				<SidebarMenuItem>
+					<SidebarMenuButton size="lg">
 						{#snippet child({ props })}
 							<a
 								{...props}
@@ -54,18 +65,18 @@
 								</span>
 							</a>
 						{/snippet}
-					</Sidebar.MenuButton>
-				</Sidebar.MenuItem>
-			</Sidebar.Menu>
-			<Sidebar.Trigger class="shrink-0" />
+					</SidebarMenuButton>
+				</SidebarMenuItem>
+			</SidebarMenu>
+			<SidebarTrigger class="shrink-0" />
 		</div>
-	</Sidebar.Header>
-	<Sidebar.Content>
-		<Sidebar.Group>
-			<Sidebar.Menu>
+	</SidebarHeader>
+	<SidebarContent>
+		<SidebarGroup>
+			<SidebarMenu>
 				{#each links as link (link.href)}
-					<Sidebar.MenuItem>
-						<Sidebar.MenuButton
+					<SidebarMenuItem>
+						<SidebarMenuButton
 							isActive={page.url.pathname === link.href}
 							tooltipContent={link.label}
 						>
@@ -75,14 +86,14 @@
 									<span>{link.label}</span>
 								</a>
 							{/snippet}
-						</Sidebar.MenuButton>
-					</Sidebar.MenuItem>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
 				{/each}
-			</Sidebar.Menu>
-		</Sidebar.Group>
-	</Sidebar.Content>
-	<Sidebar.Footer>
+			</SidebarMenu>
+		</SidebarGroup>
+	</SidebarContent>
+	<SidebarFooter>
 		<UserMenu variant="full" />
-	</Sidebar.Footer>
-	<Sidebar.Rail />
-</Sidebar.Root>
+	</SidebarFooter>
+	<SidebarRail />
+</Sidebar>
