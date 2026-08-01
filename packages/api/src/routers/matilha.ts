@@ -48,13 +48,14 @@ function hasProductWithStatus(
 
 async function requireOwnedProduct(productId: string, founderId: string) {
 	const [row] = await db
-		.select({ founderId: product.founderId })
+		.select({ founderId: product.founderId, name: product.name })
 		.from(product)
 		.where(eq(product.id, productId))
 		.limit(1);
 	if (!row || row.founderId !== founderId) {
 		throw new ORPCError("NOT_FOUND");
 	}
+	return row.name;
 }
 
 async function requireEditableCheckIn(checkInId: string, founderId: string) {
