@@ -33,6 +33,9 @@ export const env = createEnv({
 			.enum(["development", "production", "test"])
 			.default("development"),
 		UPLOADTHING_TOKEN: z.string().min(1),
+		WHATSAPP_API_SECRET: z.string().min(1).optional(),
+		WHATSAPP_API_URL: z.url().optional(),
+		WHATSAPP_GROUP_ID: z.string().min(1).optional(),
 	},
 	skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });
