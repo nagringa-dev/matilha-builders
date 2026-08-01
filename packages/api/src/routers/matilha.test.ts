@@ -17,7 +17,7 @@ const { dbMock, insertValues, updateWhere } = vi.hoisted(() => {
 			const keys = Object.keys(fields);
 			let rows: unknown[];
 			if (keys.includes("founderId")) {
-				rows = [{ founderId: "founder-1" }];
+				rows = [{ founderId: "founder-1", name: "better-posture" }];
 			} else if (keys.includes("createdAt")) {
 				rows = [{ createdAt: new Date("2026-07-21T12:00:00Z") }];
 			} else {
@@ -48,13 +48,19 @@ const { dbMock, insertValues, updateWhere } = vi.hoisted(() => {
 
 vi.mock("@matilha-builders/db", () => ({ db: dbMock }));
 
+const { notifyCheckIn } = vi.hoisted(() => ({
+	notifyCheckIn: vi.fn(async () => undefined),
+}));
+
+vi.mock("../lib/whatsapp", () => ({ notifyCheckIn }));
+
 import { matilhaRouter } from "./matilha";
 
 // The mocked founder last checked in on 2026-07-21, in the calendar week
 // starting Monday 2026-07-20 (São Paulo time), with a stored streak of 4.
 const client = createRouterClient(matilhaRouter, {
 	context: {
-		session: { user: { id: "founder-1" } },
+		session: { user: { id: "founder-1", name: "Lucas Chitolina" } },
 	} as never,
 });
 
@@ -97,5 +103,41 @@ describe("checkIns.create", () => {
 				progress: "Shipped another iteration",
 			})
 		).resolves.toEqual({ streak: 5 });
+	});
+
+	it("announces the check-in in the group", async () => {
+		vi.setSystemTime(new Date("2026-07-23T12:00:00Z"));
+
+		await client.checkIns.create({
+			blocked: "Nothing",
+			help: "Preciso de ajuda com deploy",
+			productId: "product-1",
+			progress: "Shipped another iteration",
+		});
+
+		expect(notifyCheckIn).toHaveBeenCalledWith(
+			expect.objectContaining({
+				blocked: "Nothing",
+				founderName: "Lucas Chitolina",
+				help: "Preciso de ajuda com deploy",
+				productName: "better-posture",
+				progress: "Shipped another iteration",
+				streak: 4,
+			})
+		);
+	});
+
+	it("still saves the check-in when the group notification fails", async () => {
+		vi.setSystemTime(new Date("2026-07-23T12:00:00Z"));
+		notifyCheckIn.mockRejectedValueOnce(new Error("whatsapp is down"));
+
+		await expect(
+			client.checkIns.create({
+				blocked: "Nothing",
+				productId: "product-1",
+				progress: "Shipped another iteration",
+			})
+		).resolves.toEqual({ streak: 4 });
+		expect(updateWhere).toHaveBeenCalledOnce();
 	});
 });
