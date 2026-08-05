@@ -17,6 +17,7 @@
 	import ProfileHeader from "$lib/components/matilha/profile-header.svelte";
 	import ProfileProducts from "$lib/components/matilha/profile-products.svelte";
 	import ProfileTimeline from "$lib/components/matilha/profile-timeline.svelte";
+	import ProfileTools from "$lib/components/matilha/profile-tools.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import {
 		Drawer,
@@ -68,7 +69,7 @@
 	let avatarPreview = $state<string | null>(null);
 	let showEditProfile = $state(false);
 
-	const tabs = ["geral", "produtos", "check-ins"] as const;
+	const tabs = ["geral", "produtos", "check-ins", "ferramentas"] as const;
 	type ProfileTab = (typeof tabs)[number];
 
 	function parseTab(value: string | null): ProfileTab {
@@ -279,6 +280,7 @@
 				{@render tabTrigger("geral", "Geral")}
 				{@render tabTrigger("produtos", "Produtos")}
 				{@render tabTrigger("check-ins", "Check-ins")}
+				{@render tabTrigger("ferramentas", "Ferramentas")}
 			</TabsList>
 
 			<TabsContent class="pt-5" value="geral">
@@ -305,6 +307,10 @@
 					isFetchingNextPage={historyQuery.isFetchingNextPage}
 					onLoadMore={() => historyQuery.fetchNextPage()}
 				/>
+			</TabsContent>
+
+			<TabsContent class="pt-5" value="ferramentas">
+				<ProfileTools {founderId} {isOwnProfile} />
 			</TabsContent>
 		</Tabs>
 	</div>

@@ -4,6 +4,7 @@
 	import LayoutDashboardIcon from "@lucide/svelte/icons/layout-dashboard";
 	import PawPrintIcon from "@lucide/svelte/icons/paw-print";
 	import RssIcon from "@lucide/svelte/icons/rss";
+	import WrenchIcon from "@lucide/svelte/icons/wrench";
 	import { page } from "$app/state";
 	import { authClient } from "$lib/auth-client";
 	import {
@@ -28,6 +29,7 @@
 	const baseLinks = [
 		{ href: "/board", icon: LayoutDashboardIcon, label: "Board" },
 		{ href: "/feed", icon: RssIcon, label: "Feed" },
+		{ href: "/tools", icon: WrenchIcon, label: "Ferramentas" },
 		{ href: "/checkin", icon: CalendarCheckIcon, label: "Check-in" },
 	];
 	const links = $derived(
