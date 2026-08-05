@@ -4,8 +4,7 @@
 	type Status = "validating" | "building" | "launched";
 
 	interface Product {
-		id: string;
-		imageUrl: string | null;
+		link?: string | null;
 		name: string;
 		status: Status;
 	}
@@ -31,13 +30,26 @@
 	};
 
 	const initial = $derived((product.name || "?").charAt(0).toUpperCase());
-	let failedImageUrl = $state<string | null>(null);
-	const showInitial = $derived(
-		!product.imageUrl || failedImageUrl === product.imageUrl
-	);
+	const faviconUrl = $derived.by(() => {
+		if (!product.link) {
+			return null;
+		}
 
-	function handleImageError() {
-		failedImageUrl = product.imageUrl;
+		try {
+			const url = new URL(product.link);
+			if (url.protocol !== "http:" && url.protocol !== "https:") {
+				return null;
+			}
+			return `${url.origin}/favicon.ico`;
+		} catch {
+			return null;
+		}
+	});
+	let failedFaviconUrl = $state<string | null>(null);
+	const showInitial = $derived(!faviconUrl || failedFaviconUrl === faviconUrl);
+
+	function handleFaviconError() {
+		failedFaviconUrl = faviconUrl;
 	}
 </script>
 
@@ -50,12 +62,12 @@
 			{initial}
 		</span>
 	{:else}
-		<!-- biome-ignore lint/a11y/noNoninteractiveElementInteractions: onerror only handles a failed product thumbnail -->
+		<!-- biome-ignore lint/a11y/noNoninteractiveElementInteractions: onerror only handles a failed favicon -->
 		<img
 			alt=""
 			class="size-9 shrink-0 rounded-lg object-cover shadow-sm ring-1 ring-border"
-			onerror={handleImageError}
-			src={product.imageUrl}
+			onerror={handleFaviconError}
+			src={faviconUrl ?? undefined}
 		>
 	{/if}
 	<span class="min-w-0 flex-1">

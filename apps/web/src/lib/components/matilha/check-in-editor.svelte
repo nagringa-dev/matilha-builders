@@ -23,6 +23,7 @@
 	interface Product {
 		id: string;
 		imageUrl: string | null;
+		link: string | null;
 		name: string;
 		status: "validating" | "building" | "launched";
 	}
