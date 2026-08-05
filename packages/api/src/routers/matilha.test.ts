@@ -113,6 +113,21 @@ describe("checkIns.create", () => {
 		).resolves.toEqual({ streak: 5 });
 	});
 
+	it("accepts a progress-only check-in", async () => {
+		vi.setSystemTime(new Date("2026-07-23T12:00:00Z"));
+
+		await expect(
+			client.checkIns.create({
+				blocked: "",
+				productId: "product-1",
+				progress: "Shipped another iteration",
+			})
+		).resolves.toEqual({ streak: 4 });
+		expect(insertValues).toHaveBeenCalledWith(
+			expect.objectContaining({ blocked: "" })
+		);
+	});
+
 	it("announces the check-in in the group", async () => {
 		vi.setSystemTime(new Date("2026-07-23T12:00:00Z"));
 
@@ -189,6 +204,33 @@ describe("checkIns.update", () => {
 			progress: "Shipped an iteration",
 		});
 		expect(updateWhere).toHaveBeenCalledOnce();
+	});
+
+	it("allows clearing the blocked update", async () => {
+		selectResults.push(
+			[
+				{
+					createdAt: new Date("2026-07-21T12:00:00Z"),
+					dismissedAt: null,
+					founderId: "founder-1",
+				},
+			],
+			[{ founderId: "founder-1", name: "new-product" }]
+		);
+
+		await client.checkIns.update({
+			blocked: "",
+			id: "check-in-1",
+			productId: "product-2",
+			progress: "Shipped an iteration",
+		});
+
+		expect(updateSet).toHaveBeenCalledWith({
+			blocked: "",
+			help: null,
+			productId: "product-2",
+			progress: "Shipped an iteration",
+		});
 	});
 
 	it("rejects a product owned by another founder", async () => {

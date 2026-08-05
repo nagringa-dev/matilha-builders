@@ -31,7 +31,7 @@
 {:else}
 	<span
 		class={cn(
-			"flex items-center justify-center rounded-full bg-secondary font-semibold text-secondary-foreground",
+			"flex items-center justify-center rounded-full bg-muted font-semibold text-foreground ring-1 ring-border/70 shadow-inner",
 			sizeClasses[size],
 			className
 		)}

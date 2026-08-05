@@ -21,6 +21,7 @@
 		placeholder,
 		rows,
 		hint,
+		hideLabel = false,
 		showError = true,
 	}: {
 		field: FormField;
@@ -28,6 +29,7 @@
 		placeholder: string;
 		rows: number;
 		hint?: string;
+		hideLabel?: boolean;
 		showError?: boolean;
 	} = $props();
 
@@ -47,12 +49,13 @@
 <Field
 	error={hasError ? field.state.meta.errors[0]?.message : undefined}
 	{hint}
-	htmlFor={field.name}
-	{label}
+	htmlFor={hideLabel ? undefined : field.name}
+	label={hideLabel ? undefined : label}
 >
 	<Textarea
 		aria-describedby={describedBy}
 		aria-invalid={hasError}
+		aria-label={hideLabel ? label : undefined}
 		id={field.name}
 		name={field.name}
 		onblur={field.handleBlur}

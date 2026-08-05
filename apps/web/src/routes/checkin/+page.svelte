@@ -12,6 +12,7 @@
 	import CheckInSuccessState from "$lib/components/matilha/check-in-success-state.svelte";
 	import Field from "$lib/components/matilha/field.svelte";
 	import FormTextareaField from "$lib/components/matilha/form-textarea-field.svelte";
+	import OptionalCheckInField from "$lib/components/matilha/optional-check-in-field.svelte";
 	import ProductSelectCard from "$lib/components/matilha/product-select-card.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Card } from "$lib/components/ui/card/index.js";
@@ -220,15 +221,41 @@
 		},
 	}));
 
-	const validationSchema = z.object({
-		blocked: z.string().min(1, "Conta o que travou"),
-		help: z.string(),
-		productId: z.string(),
-		progress: z.string().min(1, "Conta o que avançou"),
-	});
+	const validationSchema = z
+		.object({
+			blocked: z.string(),
+			blockedEnabled: z.boolean(),
+			help: z.string(),
+			helpEnabled: z.boolean(),
+			productId: z.string(),
+			progress: z.string().min(1, "Conta o que avançou"),
+		})
+		.superRefine((value, context) => {
+			if (value.blockedEnabled && !value.blocked.trim()) {
+				context.addIssue({
+					code: "custom",
+					message: "Conta o que travou",
+					path: ["blocked"],
+				});
+			}
+			if (value.helpEnabled && !value.help.trim()) {
+				context.addIssue({
+					code: "custom",
+					message: "Conta como a comunidade pode ajudar",
+					path: ["help"],
+				});
+			}
+		});
 
 	const form = createForm(() => ({
-		defaultValues: { blocked: "", help: "", productId: "", progress: "" },
+		defaultValues: {
+			blocked: "",
+			blockedEnabled: false,
+			help: "",
+			helpEnabled: false,
+			productId: "",
+			progress: "",
+		},
 		onSubmit: ({ value }) => {
 			// Fire-and-forget: the mutation is optimistic (see postCheckIn.onMutate),
 			// so the success screen appears instantly instead of waiting on the
@@ -300,7 +327,7 @@
 					{/if}
 				</AnimatePresence>
 				<form
-					class="flex flex-col gap-4"
+					class="flex flex-col gap-3"
 					onsubmit={(e) => {
 						e.preventDefault();
 						e.stopPropagation();
@@ -370,27 +397,37 @@
 						{/snippet}
 					</form.Field>
 
-					<form.Field name="blocked">
-						{#snippet children(field)}
-							<FormTextareaField
-								{field}
-								label="O que travou"
-								placeholder="O que te segurou"
-								rows={3}
-							/>
+					<form.Field name="blockedEnabled">
+						{#snippet children(enabledField)}
+							<form.Field name="blocked">
+								{#snippet children(field)}
+									<OptionalCheckInField
+										enabled={enabledField.state.value}
+										{field}
+										label="Travou nesta semana?"
+										onEnabledChange={enabledField.handleChange}
+										placeholder="O que te segurou"
+										tone="warning"
+									/>
+								{/snippet}
+							</form.Field>
 						{/snippet}
 					</form.Field>
 
-					<form.Field name="help">
-						{#snippet children(field)}
-							<FormTextareaField
-								{field}
-								hint="opcional"
-								label="No que precisa de ajuda"
-								placeholder="A matilha te ajuda"
-								rows={2}
-								showError={false}
-							/>
+					<form.Field name="helpEnabled">
+						{#snippet children(enabledField)}
+							<form.Field name="help">
+								{#snippet children(field)}
+									<OptionalCheckInField
+										enabled={enabledField.state.value}
+										{field}
+										label="Precisa de ajuda?"
+										onEnabledChange={enabledField.handleChange}
+										placeholder="Como a matilha pode ajudar?"
+										tone="danger"
+									/>
+								{/snippet}
+							</form.Field>
 						{/snippet}
 					</form.Field>
 

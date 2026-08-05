@@ -9,10 +9,7 @@ Make feed check-ins easier to scan while preserving the existing dark, compact, 
 ### Header
 
 - Show the product first, using its favicon and name. The compact product presentation must not show the product lifecycle status, because the check-in status owns that visual role here.
-- Replace the header author and relative time with one accessible status indicator on the right:
-  - green when the check-in contains only progress;
-  - yellow when it contains a blocked update;
-  - red when it requests help, including when both optional sections are present.
+- Show an accessible red status indicator on the right only when the check-in requests help. Progress and blocked-only updates do not need a header indicator.
 - The indicator has a tooltip describing the state. It must not be represented only by color to assistive technology.
 - Legacy check-ins without a product receive a neutral fallback label and initial instead of failing to render.
 
@@ -32,24 +29,18 @@ Make feed check-ins easier to scan while preserving the existing dark, compact, 
 ## Check-in form behavior
 
 - Progress stays required.
-- Add independent `Travou nesta semana` and `Precisa de ajuda da comunidade` checkboxes in both the creation page and edit drawer.
-- Each checkbox controls its corresponding textarea. Enabling it displays the textarea and makes it required. Disabling it clears the value and hides the textarea.
-- Optional text fields are represented by empty values when disabled. No schema migration or new database columns are needed.
+- Add independent `Travou nesta semana?` and `Precisa de ajuda?` disclosures in both the creation page and edit drawer.
+- Opening a disclosure reveals its textarea and makes it required. Closing it hides the textarea while preserving text already entered, so people can reconsider without losing their work.
+- Optional text fields are represented by empty values when unused. No schema migration or new database columns are needed.
 - The API accepts an empty blocked value, while progress remains required. Help continues to be omitted when empty.
 
 ## State derivation
 
-The feed card derives its status directly from persisted content:
-
-1. non-empty help: red;
-2. otherwise non-empty blocked: yellow;
-3. otherwise: green.
-
-This keeps existing check-ins compatible and makes red deterministic when both checkboxes are selected.
+The feed card shows its status indicator directly from persisted content: a non-empty help value produces the red marker. This keeps existing check-ins compatible and makes the call for community help immediately visible.
 
 ## Validation
 
 - Add or adjust API tests for creating and editing check-ins without a blocked value.
-- Add component tests for checkbox-driven required fields and for the three feed state variants.
+- Add component tests for disclosure-driven required fields and the red help indicator.
 - Run targeted formatting, Svelte type checking, and web tests.
-- Validate locally with the three seeded founders: green-only, yellow blocked, and red help states; verify icon tooltips and responsive layout.
+- Validate locally with the three seeded founders: progress-only, blocked, and red help states; verify icon tooltips and responsive layout.

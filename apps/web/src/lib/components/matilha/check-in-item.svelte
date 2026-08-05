@@ -21,6 +21,11 @@
 	} from "$lib/components/ui/alert-dialog/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { toast } from "$lib/components/ui/sonner/index.js";
+	import {
+		Tooltip,
+		TooltipContent,
+		TooltipTrigger,
+	} from "$lib/components/ui/tooltip/index.js";
 	import { formatRelative } from "$lib/format";
 	import { orpc } from "$lib/orpc";
 	import Avatar from "./avatar.svelte";
@@ -68,6 +73,7 @@
 
 	const isDismissed = $derived(!!checkIn.dismissedAt);
 	const isOwner = $derived(checkIn.founderId === currentUserId);
+	const needsHelp = $derived(Boolean(checkIn.help?.trim()));
 	const isEditable = $derived(
 		isOwner &&
 			!isDismissed &&
@@ -185,130 +191,197 @@
 			Desconsiderado pela comunidade
 		</div>
 	{/if}
-	<div class="mb-3 flex items-center justify-between gap-3">
-		{#if showAuthor}
-			<a
-				aria-label="Ver perfil de {checkIn.name}"
-				class="group flex w-fit items-center gap-2 rounded text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				href="/profile/{checkIn.founderId}"
-			>
-				<Avatar name={checkIn.name} size="sm" src={checkIn.avatarUrl} />
-				<span
-					class="underline decoration-muted-foreground/40 underline-offset-2 transition-colors group-hover:decoration-foreground"
-					>{checkIn.name}</span
-				>
-			</a>
-			<span class="flex items-center gap-2">
-				{#if checkIn.product}
-					<ProductChip
-						product={checkIn.product}
-						showImage={false}
-						variant="tag"
-					/>
-				{/if}
-				<span class="font-mono text-xs text-muted-foreground"
-					>{formatRelative(checkIn.createdAt)}</span
-				>
-			</span>
+
+	<div class="mb-5 flex items-center justify-between gap-3">
+		{#if checkIn.product}
+			<ProductChip
+				class="max-w-[min(18rem,calc(100vw-8rem))]"
+				product={checkIn.product}
+				showImage={true}
+				showStatus={false}
+				variant="tag"
+			/>
 		{:else}
-			{#if checkIn.product}
-				<ProductChip
-					product={checkIn.product}
-					showImage={false}
-					size="sm"
-					variant="tile"
-				/>
-			{:else}
-				<span></span>
-			{/if}
-			<span class="font-mono text-xs text-muted-foreground"
-				>{formatRelative(checkIn.createdAt)}</span
+			<span
+				class="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 py-0.5 pr-2.5 pl-0.5 text-xs font-medium"
 			>
+				<span
+					class="flex size-6 items-center justify-center rounded-md bg-muted font-semibold text-muted-foreground"
+					>?</span
+				>
+				Sem produto
+			</span>
+		{/if}
+
+		{#if needsHelp}
+			<Tooltip>
+				<TooltipTrigger>
+					{#snippet child({ props })}
+						<span
+							{...props}
+							aria-label="Precisa de ajuda"
+							class="flex size-6 shrink-0 items-center justify-center"
+							role="img"
+						>
+							<span class="size-2.5 rounded-full bg-destructive"></span>
+						</span>
+					{/snippet}
+				</TooltipTrigger>
+				<TooltipContent>Precisa de ajuda</TooltipContent>
+			</Tooltip>
 		{/if}
 	</div>
-	<div class="flex flex-col gap-2 text-sm leading-normal">
-		<div>
-			<span class="text-xs font-medium text-status-launched">avançou</span>
-			<div>{checkIn.progress}</div>
-		</div>
-		<div>
-			<span class="text-xs font-medium text-status-validating">travou</span>
-			<div>{checkIn.blocked}</div>
-		</div>
-		{#if checkIn.help}
-			<div>
-				<span class="text-xs font-medium text-status-building"
+
+	<div class="flex flex-col gap-4 text-sm leading-relaxed">
+		<section class="border-status-launched/60 border-l-2 pl-3">
+			<span class="font-medium text-status-launched text-xs">avançou</span>
+			<p class="mt-1 text-foreground">{checkIn.progress}</p>
+		</section>
+		{#if checkIn.blocked.trim()}
+			<section class="border-amber-400/70 border-l-2 pl-3">
+				<span class="font-medium text-amber-300 text-xs">travou</span>
+				<p class="mt-1 text-foreground">{checkIn.blocked}</p>
+			</section>
+		{/if}
+		{#if checkIn.help?.trim()}
+			<section class="border-destructive/70 border-l-2 pl-3">
+				<span class="font-medium text-destructive text-xs"
 					>precisa de ajuda</span
 				>
-				<div>{checkIn.help}</div>
+				<p class="mt-1 text-foreground">{checkIn.help}</p>
+			</section>
+		{/if}
+	</div>
+
+	<div
+		class="mt-5 flex items-end justify-between gap-3 border-border/60 border-t pt-3"
+	>
+		<div class="min-w-0">
+			{#if !isOwner && showAuthor}
+				<a
+					aria-label="Ver perfil de {checkIn.name}"
+					class="group flex min-w-0 items-center gap-2"
+					href="/profile/{checkIn.founderId}"
+				>
+					<Avatar name={checkIn.name} size="sm" src={checkIn.avatarUrl} />
+					<span class="min-w-0">
+						<span
+							class="block truncate text-xs font-medium underline decoration-muted-foreground/40 underline-offset-2 transition-colors group-hover:decoration-foreground"
+						>
+							{checkIn.name}
+						</span>
+						<span
+							class="mt-0.5 block font-mono text-[11px] text-muted-foreground"
+						>
+							{formatRelative(checkIn.createdAt)}
+						</span>
+					</span>
+				</a>
+			{:else}
+				<div class="flex min-w-0 items-center gap-2">
+					<Avatar name={checkIn.name} size="sm" src={checkIn.avatarUrl} />
+					<span class="min-w-0">
+						<span class="block truncate text-xs font-medium">
+							{isOwner ? "Seu check-in" : checkIn.name}
+						</span>
+						<span
+							class="mt-0.5 block font-mono text-[11px] text-muted-foreground"
+						>
+							{formatRelative(checkIn.createdAt)}
+						</span>
+					</span>
+				</div>
+			{/if}
+		</div>
+
+		{#if !isDismissed && ((isOwner && isEditable) || (!isOwner && showAuthor && onDismissVote))}
+			<div class="flex items-center gap-1">
+				{#if isOwner}
+					<Tooltip>
+						<TooltipTrigger>
+							{#snippet child({ props })}
+								<Button
+									{...props}
+									aria-label="Editar check-in"
+									class="text-muted-foreground hover:text-foreground"
+									onclick={startEditing}
+									size="icon-sm"
+									variant="ghost"
+								>
+									<PencilIcon class="size-3.5" />
+								</Button>
+							{/snippet}
+						</TooltipTrigger>
+						<TooltipContent>Editar check-in</TooltipContent>
+					</Tooltip>
+				{:else if checkIn.hasVoted}
+					<Tooltip>
+						<TooltipTrigger>
+							{#snippet child({ props })}
+								<span
+									{...props}
+									class="flex size-8 items-center justify-center rounded-md text-muted-foreground"
+								>
+									<FlagIcon class="size-3.5" />
+								</span>
+							{/snippet}
+						</TooltipTrigger>
+						<TooltipContent
+							>Você votou para desconsiderar ·
+							{checkIn.voteCount ?? 0}/5</TooltipContent
+						>
+					</Tooltip>
+				{:else}
+					<AlertDialog bind:open={confirmOpen}>
+						<Tooltip>
+							<TooltipTrigger>
+								{#snippet child({ props: tooltipProps })}
+									<AlertDialogTrigger>
+										{#snippet child({ props: dialogProps })}
+											<Button
+												{...tooltipProps}
+												{...dialogProps}
+												aria-label="Desconsiderar check-in"
+												class="text-muted-foreground hover:text-destructive"
+												disabled={isVoting}
+												size="icon-sm"
+												variant="ghost"
+											>
+												<FlagIcon class="size-3.5" />
+											</Button>
+										{/snippet}
+									</AlertDialogTrigger>
+								{/snippet}
+							</TooltipTrigger>
+							<TooltipContent>Desconsiderar check-in</TooltipContent>
+						</Tooltip>
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle
+									>Desconsiderar esse check-in?</AlertDialogTitle
+								>
+								<AlertDialogDescription>
+									Seu voto conta pra decisão da comunidade. Com 5 votos, o
+									check-in de {checkIn.name} é marcado como desconsiderado e ela
+									perde o streak que ganhou com ele. Essa ação não pode ser
+									desfeita depois de confirmada.
+								</AlertDialogDescription>
+							</AlertDialogHeader>
+							<AlertDialogFooter>
+								<AlertDialogCancel>Cancelar</AlertDialogCancel>
+								<AlertDialogAction
+									onclick={() => onDismissVote?.(checkIn.id)}
+									variant="destructive"
+								>
+									Confirmar voto
+								</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
+				{/if}
 			</div>
 		{/if}
 	</div>
-	{#if !isDismissed && ((isOwner && isEditable) || (!isOwner && showAuthor && onDismissVote))}
-		<div
-			class="mt-3 flex items-center justify-end gap-2 border-t border-border/60 pt-3"
-		>
-			{#if isOwner}
-				<span class="mr-auto text-xs text-muted-foreground">Seu check-in</span>
-				<button
-					aria-label="Editar check-in"
-					class="flex size-8 items-center justify-center rounded-md border border-border transition-colors hover:bg-accent"
-					onclick={startEditing}
-					title="Editar check-in"
-					type="button"
-				>
-					<PencilIcon class="size-3.5" />
-				</button>
-			{:else if checkIn.hasVoted}
-				<span class="flex items-center gap-1.5 text-xs text-muted-foreground">
-					<FlagIcon class="size-3.5" />
-					Você votou para desconsiderar · {checkIn.voteCount ?? 0}/5
-				</span>
-			{:else}
-				<AlertDialog bind:open={confirmOpen}>
-					<AlertDialogTrigger>
-						{#snippet child({ props })}
-							<Button
-								{...props}
-								class="text-muted-foreground hover:text-destructive"
-								disabled={isVoting}
-								size="sm"
-								variant="ghost"
-							>
-								<FlagIcon class="size-3.5" />
-								Desconsiderar
-								{#if checkIn.voteCount}
-									<span class="font-mono text-[11px]"
-										>({checkIn.voteCount}/5)</span
-									>
-								{/if}
-							</Button>
-						{/snippet}
-					</AlertDialogTrigger>
-					<AlertDialogContent>
-						<AlertDialogHeader>
-							<AlertDialogTitle>Desconsiderar esse check-in?</AlertDialogTitle>
-							<AlertDialogDescription>
-								Seu voto conta pra decisão da comunidade. Com 5 votos, o
-								check-in de {checkIn.name} é marcado como desconsiderado e ela
-								perde o streak que ganhou com ele. Essa ação não pode ser
-								desfeita depois de confirmada.
-							</AlertDialogDescription>
-						</AlertDialogHeader>
-						<AlertDialogFooter>
-							<AlertDialogCancel>Cancelar</AlertDialogCancel>
-							<AlertDialogAction
-								onclick={() => onDismissVote?.(checkIn.id)}
-								variant="destructive"
-							>
-								Confirmar voto
-							</AlertDialogAction>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialog>
-			{/if}
-		</div>
-	{/if}
 
 	{#if isEditable}
 		<CheckInEditor
