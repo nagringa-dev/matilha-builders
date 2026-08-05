@@ -16,6 +16,7 @@
 		TooltipContent,
 		TooltipTrigger,
 	} from "$lib/components/ui/tooltip/index.js";
+	import { getProductFaviconUrl } from "$lib/product-favicon.js";
 	import { cn } from "$lib/utils.js";
 
 	type Status = "validating" | "building" | "launched";
@@ -80,17 +81,26 @@
 	};
 
 	const initial = $derived((product.name || "?").charAt(0).toUpperCase());
+	const faviconUrl = $derived(getProductFaviconUrl(product.link));
 
-	// Products carry whatever og:image their own site advertises, so a link can
-	// point at a URL that 404s. Tracking the failed URL (rather than a boolean)
-	// makes the fallback reset on its own when the product gets a new image.
+	// Product cover images and compact favicons can both fail independently.
+	// Tracking the failed URL (rather than a boolean) makes a later URL retry.
 	let failedImageUrl = $state<string | null>(null);
-	const showInitial = $derived(
+	const showCoverInitial = $derived(
 		!product.imageUrl || failedImageUrl === product.imageUrl
 	);
 
 	function handleImageError() {
 		failedImageUrl = product.imageUrl ?? null;
+	}
+
+	let failedFaviconUrl = $state<string | null>(null);
+	const showFaviconInitial = $derived(
+		!faviconUrl || failedFaviconUrl === faviconUrl
+	);
+
+	function handleFaviconError() {
+		failedFaviconUrl = faviconUrl;
 	}
 
 	const tagDisplayName = $derived(
@@ -110,8 +120,9 @@
 </script>
 
 {#snippet thumb()}
-	{#if showInitial}
+	{#if showFaviconInitial}
 		<span
+			aria-hidden="true"
 			class={cn(
 				"flex shrink-0 items-center justify-center bg-muted font-semibold text-muted-foreground ring-1 ring-border",
 				dims,
@@ -122,12 +133,12 @@
 			{initial}
 		</span>
 	{:else}
-		<!-- biome-ignore lint/a11y/noNoninteractiveElementInteractions: onerror is a load-failure event, not a user interaction -->
+		<!-- biome-ignore lint/a11y/noNoninteractiveElementInteractions: onerror only handles a failed favicon -->
 		<img
-			alt="Imagem do produto {product.name}"
+			alt=""
 			class={cn("shrink-0 object-cover ring-1 ring-border", dims, radius)}
-			onerror={handleImageError}
-			src={product.imageUrl}
+			onerror={handleFaviconError}
+			src={faviconUrl ?? undefined}
 		>
 	{/if}
 {/snippet}
@@ -274,7 +285,7 @@
 		<div
 			class={cn("w-full overflow-hidden rounded-xl bg-muted ring-1 ring-border", coverHeight)}
 		>
-			{#if showInitial}
+			{#if showCoverInitial}
 				<div
 					class="flex h-full w-full items-center justify-center font-bold text-3xl text-muted-foreground"
 				>

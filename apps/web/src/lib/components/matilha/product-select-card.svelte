@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getProductFaviconUrl } from "$lib/product-favicon.js";
 	import { cn } from "$lib/utils.js";
 
 	type Status = "validating" | "building" | "launched";
@@ -30,21 +31,7 @@
 	};
 
 	const initial = $derived((product.name || "?").charAt(0).toUpperCase());
-	const faviconUrl = $derived.by(() => {
-		if (!product.link) {
-			return null;
-		}
-
-		try {
-			const url = new URL(product.link);
-			if (url.protocol !== "http:" && url.protocol !== "https:") {
-				return null;
-			}
-			return `${url.origin}/favicon.ico`;
-		} catch {
-			return null;
-		}
-	});
+	const faviconUrl = $derived(getProductFaviconUrl(product.link));
 	let failedFaviconUrl = $state<string | null>(null);
 	const showInitial = $derived(!faviconUrl || failedFaviconUrl === faviconUrl);
 
