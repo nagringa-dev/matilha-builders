@@ -18,10 +18,13 @@
 	} from "$lib/components/ui/select/index.js";
 	import Field from "./field.svelte";
 	import FormTextareaField from "./form-textarea-field.svelte";
+	import ProductSelectCard from "./product-select-card.svelte";
 
 	interface Product {
 		id: string;
+		imageUrl: string | null;
 		name: string;
+		status: "validating" | "building" | "launched";
 	}
 
 	interface Values {
@@ -83,20 +86,32 @@
 			>
 				<form.Field name="productId">
 					{#snippet children(field)}
+						{@const selectedProduct = products.find(
+							(product) => product.id === field.state.value
+						)}
 						<Field label="Sobre qual produto">
 							<Select
 								onValueChange={(value) => field.handleChange(value ?? "")}
 								type="single"
 								value={field.state.value}
 							>
-								<SelectTrigger class="w-full">
-									{products.find((product) => product.id === field.state.value)?.name ??
-										"Escolher produto"}
+								<SelectTrigger
+									class="min-h-14 w-full data-[size=default]:h-auto"
+								>
+									{#if selectedProduct}
+										<ProductSelectCard product={selectedProduct} />
+									{:else}
+										<span class="text-muted-foreground">Escolher produto</span>
+									{/if}
 								</SelectTrigger>
 								<SelectContent>
 									{#each products as product (product.id)}
-										<SelectItem label={product.name} value={product.id}>
-											{product.name}
+										<SelectItem
+											class="py-2 pr-9"
+											label={product.name}
+											value={product.id}
+										>
+											<ProductSelectCard {product} />
 										</SelectItem>
 									{/each}
 								</SelectContent>
