@@ -3,7 +3,11 @@
 	import FlagIcon from "@lucide/svelte/icons/flag";
 	import PencilIcon from "@lucide/svelte/icons/pencil";
 	import { EDIT_WINDOW_MS } from "@matilha-builders/api/lib/streak";
-	import { createMutation, useQueryClient } from "@tanstack/svelte-query";
+	import {
+		createMutation,
+		createQuery,
+		useQueryClient,
+	} from "@tanstack/svelte-query";
 	import {
 		AlertDialog,
 		AlertDialogAction,
@@ -73,11 +77,13 @@
 	let editOpen = $state(false);
 
 	const queryClient = useQueryClient();
+	const productsQuery = createQuery(() => orpc.products.mine.queryOptions());
 
 	interface CheckInListItem {
 		blocked: string;
 		help: string | null;
 		id: string;
+		product: Product | null;
 		progress: string;
 	}
 	interface InfiniteCheckIns {
@@ -87,6 +93,7 @@
 	interface EditorValues {
 		blocked: string;
 		help: string;
+		productId: string;
 		progress: string;
 	}
 
@@ -126,9 +133,13 @@
 			invalidateLists();
 		},
 		onMutate: (input) => {
+			const nextProduct = productsQuery.data?.find(
+				(product) => product.id === input.productId
+			);
 			patchLists(input.id, {
 				blocked: input.blocked,
 				help: input.help ?? null,
+				product: nextProduct ?? checkIn.product,
 				progress: input.progress,
 			});
 		},
@@ -140,6 +151,7 @@
 			blocked: value.blocked,
 			help: value.help || undefined,
 			id: checkIn.id,
+			productId: value.productId,
 			progress: value.progress,
 		});
 	}
@@ -150,6 +162,7 @@
 		editor?.prime({
 			blocked: checkIn.blocked,
 			help: checkIn.help ?? "",
+			productId: checkIn.product?.id ?? "",
 			progress: checkIn.progress,
 		});
 		editOpen = true;
@@ -301,6 +314,7 @@
 		<CheckInEditor
 			isSaving={editMutation.isPending}
 			onSave={saveEdit}
+			products={productsQuery.data ?? []}
 			bind:this={editor}
 			bind:open={editOpen}
 		/>

@@ -10,11 +10,24 @@
 		DrawerHeader,
 		DrawerTitle,
 	} from "$lib/components/ui/drawer/index.js";
+	import {
+		Select,
+		SelectContent,
+		SelectItem,
+		SelectTrigger,
+	} from "$lib/components/ui/select/index.js";
+	import Field from "./field.svelte";
 	import FormTextareaField from "./form-textarea-field.svelte";
+
+	interface Product {
+		id: string;
+		name: string;
+	}
 
 	interface Values {
 		blocked: string;
 		help: string;
+		productId: string;
 		progress: string;
 	}
 
@@ -22,20 +35,23 @@
 		open = $bindable(false),
 		isSaving = false,
 		onSave,
+		products = [],
 	}: {
 		open?: boolean;
 		isSaving?: boolean;
 		onSave: (value: Values) => void;
+		products?: Product[];
 	} = $props();
 
 	const schema = z.object({
 		blocked: z.string().min(1, "Conta o que travou"),
 		help: z.string(),
+		productId: z.string().min(1, "Escolhe um produto"),
 		progress: z.string().min(1, "Conta o que avançou"),
 	});
 
 	const form = createForm(() => ({
-		defaultValues: { blocked: "", help: "", progress: "" },
+		defaultValues: { blocked: "", help: "", productId: "", progress: "" },
 		onSubmit: ({ value }) => onSave(value),
 		validators: { onSubmit: schema },
 	}));
@@ -65,6 +81,29 @@
 					form.handleSubmit();
 				}}
 			>
+				<form.Field name="productId">
+					{#snippet children(field)}
+						<Field label="Sobre qual produto">
+							<Select
+								onValueChange={(value) => field.handleChange(value ?? "")}
+								type="single"
+								value={field.state.value}
+							>
+								<SelectTrigger class="w-full">
+									{products.find((product) => product.id === field.state.value)?.name ??
+										"Escolher produto"}
+								</SelectTrigger>
+								<SelectContent>
+									{#each products as product (product.id)}
+										<SelectItem label={product.name} value={product.id}>
+											{product.name}
+										</SelectItem>
+									{/each}
+								</SelectContent>
+							</Select>
+						</Field>
+					{/snippet}
+				</form.Field>
 				<form.Field name="progress">
 					{#snippet children(field)}
 						<FormTextareaField

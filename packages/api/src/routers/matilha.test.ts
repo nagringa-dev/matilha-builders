@@ -1,50 +1,57 @@
 import { createRouterClient } from "@orpc/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { dbMock, insertValues, updateWhere } = vi.hoisted(() => {
-	interface SelectChain {
-		from: () => SelectChain;
-		limit: () => Promise<unknown[]>;
-		orderBy: () => SelectChain;
-		where: () => SelectChain;
-	}
+const { dbMock, insertValues, selectResults, updateSet, updateWhere } =
+	vi.hoisted(() => {
+		interface SelectChain {
+			from: () => SelectChain;
+			limit: () => Promise<unknown[]>;
+			orderBy: () => SelectChain;
+			where: () => SelectChain;
+		}
 
-	const insertValuesMock = vi.fn(async () => undefined);
-	const updateWhereMock = vi.fn(async () => undefined);
-	const databaseMock = {
-		insert: vi.fn(() => ({ values: insertValuesMock })),
-		select: vi.fn((fields: Record<string, unknown>) => {
-			const keys = Object.keys(fields);
-			let rows: unknown[];
-			if (keys.includes("founderId")) {
-				rows = [{ founderId: "founder-1", name: "better-posture" }];
-			} else if (keys.includes("createdAt")) {
-				rows = [{ createdAt: new Date("2026-07-21T12:00:00Z") }];
-			} else {
-				rows = [
-					{
-						lastCheckInAt: new Date("2026-07-21T12:00:00Z"),
-						streak: 4,
-					},
-				];
-			}
-			const chain = {} as SelectChain;
-			chain.from = () => chain;
-			chain.limit = async () => rows;
-			chain.orderBy = () => chain;
-			chain.where = () => chain;
-			return chain;
-		}),
-		update: vi.fn(() => ({
-			set: vi.fn(() => ({ where: updateWhereMock })),
-		})),
-	};
-	return {
-		dbMock: databaseMock,
-		insertValues: insertValuesMock,
-		updateWhere: updateWhereMock,
-	};
-});
+		const insertValuesMock = vi.fn(async () => undefined);
+		const selectResultsMock: unknown[][] = [];
+		const updateWhereMock = vi.fn(async () => undefined);
+		const updateSetMock = vi.fn(() => ({ where: updateWhereMock }));
+		const databaseMock = {
+			insert: vi.fn(() => ({ values: insertValuesMock })),
+			select: vi.fn((fields: Record<string, unknown>) => {
+				const keys = Object.keys(fields);
+				let rows: unknown[];
+				if (selectResultsMock.length > 0) {
+					rows = selectResultsMock.shift() ?? [];
+				} else if (keys.includes("founderId")) {
+					rows = [{ founderId: "founder-1", name: "better-posture" }];
+				} else if (keys.includes("createdAt")) {
+					rows = [{ createdAt: new Date("2026-07-21T12:00:00Z") }];
+				} else {
+					rows = [
+						{
+							lastCheckInAt: new Date("2026-07-21T12:00:00Z"),
+							streak: 4,
+						},
+					];
+				}
+				const chain = {} as SelectChain;
+				chain.from = () => chain;
+				chain.limit = async () => rows;
+				chain.orderBy = () => chain;
+				chain.where = () => chain;
+				return chain;
+			}),
+			update: vi.fn(() => ({
+				set: updateSetMock,
+			})),
+		};
+		return {
+			dbMock: databaseMock,
+			insertValues: insertValuesMock,
+			selectResults: selectResultsMock,
+			updateSet: updateSetMock,
+			updateWhere: updateWhereMock,
+		};
+	});
 
 vi.mock("@matilha-builders/db", () => ({ db: dbMock }));
 
@@ -67,6 +74,7 @@ const client = createRouterClient(matilhaRouter, {
 describe("checkIns.create", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		selectResults.length = 0;
 		vi.useFakeTimers();
 	});
 
@@ -139,5 +147,93 @@ describe("checkIns.create", () => {
 			})
 		).resolves.toEqual({ streak: 4 });
 		expect(updateWhere).toHaveBeenCalledOnce();
+	});
+});
+
+describe("checkIns.update", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		selectResults.length = 0;
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-07-23T12:00:00Z"));
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it("changes the check-in to another product owned by the founder", async () => {
+		selectResults.push(
+			[
+				{
+					createdAt: new Date("2026-07-21T12:00:00Z"),
+					dismissedAt: null,
+					founderId: "founder-1",
+				},
+			],
+			[{ founderId: "founder-1", name: "new-product" }]
+		);
+
+		await client.checkIns.update({
+			blocked: "Nothing",
+			help: "Feedback",
+			id: "check-in-1",
+			productId: "product-2",
+			progress: "Shipped an iteration",
+		});
+
+		expect(updateSet).toHaveBeenCalledWith({
+			blocked: "Nothing",
+			help: "Feedback",
+			productId: "product-2",
+			progress: "Shipped an iteration",
+		});
+		expect(updateWhere).toHaveBeenCalledOnce();
+	});
+
+	it("rejects a product owned by another founder", async () => {
+		selectResults.push(
+			[
+				{
+					createdAt: new Date("2026-07-21T12:00:00Z"),
+					dismissedAt: null,
+					founderId: "founder-1",
+				},
+			],
+			[{ founderId: "founder-2", name: "foreign-product" }]
+		);
+
+		await expect(
+			client.checkIns.update({
+				blocked: "Nothing",
+				id: "check-in-1",
+				productId: "product-2",
+				progress: "Shipped an iteration",
+			})
+		).rejects.toThrow();
+		expect(updateSet).not.toHaveBeenCalled();
+	});
+
+	it("rejects a product that does not exist", async () => {
+		selectResults.push(
+			[
+				{
+					createdAt: new Date("2026-07-21T12:00:00Z"),
+					dismissedAt: null,
+					founderId: "founder-1",
+				},
+			],
+			[]
+		);
+
+		await expect(
+			client.checkIns.update({
+				blocked: "Nothing",
+				id: "check-in-1",
+				productId: "missing-product",
+				progress: "Shipped an iteration",
+			})
+		).rejects.toThrow();
+		expect(updateSet).not.toHaveBeenCalled();
 	});
 });
