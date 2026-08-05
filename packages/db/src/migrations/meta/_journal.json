@@ -50,6 +50,13 @@
       "when": 1784513075973,
       "tag": "0006_check_in_dismissal_votes",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785954063682,
+      "tag": "0007_lively_professor_monster",
+      "breakpoints": true
     }
   ]
 }
