@@ -17,6 +17,7 @@ import {
 	PAGE_SIZE,
 } from "../lib/constants";
 import { fetchOgImage } from "../lib/og-image";
+import { paginate } from "../lib/pagination";
 import { normalizePhone } from "../lib/phone";
 import {
 	computeCurrentStreak,
@@ -25,13 +26,6 @@ import {
 	EDIT_WINDOW_MS,
 } from "../lib/streak";
 import { notifyCheckIn } from "../lib/whatsapp";
-
-function paginate<T>(items: T[], cursor: number) {
-	return {
-		items,
-		nextCursor: items.length === PAGE_SIZE ? cursor + PAGE_SIZE : undefined,
-	};
-}
 
 function hasProductWithStatus(
 	founderUserId: typeof founder.userId,

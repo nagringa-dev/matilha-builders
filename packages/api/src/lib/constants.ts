@@ -9,3 +9,7 @@ export const PRODUCT_INTEREST_LABELS = {
 	observing: "Só observando",
 	running: "Já tenho produto rodando",
 } as const;
+
+export const TOOL_NOTED_ADOPTERS_PAGE_SIZE = 10;
+
+export const TOOL_AVATAR_PREVIEW_LIMIT = 8;
