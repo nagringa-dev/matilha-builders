@@ -51,6 +51,7 @@
 		showStatus?: boolean;
 		showImage?: boolean;
 		showLink?: boolean;
+		/** Replaces the status indicator at the end of the `tag` variant. */
 		trailing?: Snippet;
 		class?: string;
 	} = $props();
@@ -234,7 +235,11 @@
 					{:else}
 						<span>{tagDisplayName}</span>
 					{/if}
-					{@render trailing?.()}
+					{#if trailing}
+						{@render trailing()}
+					{:else if product.status}
+						<ProductStatus status={product.status} />
+					{/if}
 				</span>
 			{/snippet}
 		</TooltipTrigger>

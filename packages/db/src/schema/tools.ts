@@ -1,5 +1,13 @@
-import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
+import {
+	check,
+	foreignKey,
+	index,
+	pgTable,
+	text,
+	timestamp,
+	uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
 import { founder, product } from "./matilha";
@@ -39,6 +47,7 @@ export const builderTool = pgTable(
 		id: text("id")
 			.primaryKey()
 			.$defaultFn(() => crypto.randomUUID()),
+		// Blank is stored as NULL, never "". Readers rely on a plain NULL check.
 		note: text("note"),
 		toolId: text("tool_id")
 			.notNull()
@@ -50,28 +59,37 @@ export const builderTool = pgTable(
 	},
 	(table) => [
 		uniqueIndex("builder_tool_unique").on(table.founderId, table.toolId),
+		// The (founder, tool) unique index cannot serve a tool-only filter.
+		index("builder_tool_tool_id_idx").on(table.toolId),
+		check("builder_tool_note_not_blank", sql`btrim(${table.note}) <> ''`),
 	]
 );
 
+// Keyed on (founder, tool) rather than builder_tool's surrogate id, so an
+// adoption writes as one batch with no read-back. See writeAdoption.
 export const builderToolProduct = pgTable(
 	"builder_tool_product",
 	{
-		builderToolId: text("builder_tool_id")
-			.notNull()
-			.references(() => builderTool.id, { onDelete: "cascade" }),
 		createdAt: timestamp("created_at").defaultNow().notNull(),
+		founderId: text("founder_id").notNull(),
 		id: text("id")
 			.primaryKey()
 			.$defaultFn(() => crypto.randomUUID()),
 		productId: text("product_id")
 			.notNull()
 			.references(() => product.id, { onDelete: "cascade" }),
+		toolId: text("tool_id").notNull(),
 	},
 	(table) => [
 		uniqueIndex("builder_tool_product_unique").on(
-			table.builderToolId,
+			table.founderId,
+			table.toolId,
 			table.productId
 		),
+		foreignKey({
+			columns: [table.founderId, table.toolId],
+			foreignColumns: [builderTool.founderId, builderTool.toolId],
+		}).onDelete("cascade"),
 	]
 );
 
@@ -95,8 +113,8 @@ export const builderToolProductRelations = relations(
 	builderToolProduct,
 	({ one }) => ({
 		builderTool: one(builderTool, {
-			fields: [builderToolProduct.builderToolId],
-			references: [builderTool.id],
+			fields: [builderToolProduct.founderId, builderToolProduct.toolId],
+			references: [builderTool.founderId, builderTool.toolId],
 		}),
 		product: one(product, {
 			fields: [builderToolProduct.productId],

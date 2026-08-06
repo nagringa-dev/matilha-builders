@@ -6,9 +6,9 @@
 		toolCategoryLabel,
 	} from "@matilha-builders/db/tool-categories";
 	import { createInfiniteQuery } from "@tanstack/svelte-query";
-	import Avatar from "$lib/components/matilha/avatar.svelte";
+	import AvatarStack from "$lib/components/matilha/avatar-stack.svelte";
 	import InfiniteScrollSentinel from "$lib/components/matilha/infinite-scroll-sentinel.svelte";
-	import ToolDrawer from "$lib/components/matilha/tool-drawer.svelte";
+	import ToolAdoptDrawer from "$lib/components/matilha/tool-adopt-drawer.svelte";
 	import ToolLogo from "$lib/components/matilha/tool-logo.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Loader } from "$lib/components/ui/loader/index.js";
@@ -77,7 +77,7 @@
 		</Button>
 	</div>
 
-	<ToolDrawer bind:open={showDrawer} />
+	<ToolAdoptDrawer bind:open={showDrawer} />
 
 	<div class="mb-5 flex flex-wrap gap-1.5">
 		<button
@@ -146,25 +146,7 @@
 							{categoryLabel(item.category)}
 						</span>
 					</div>
-					<span class="flex shrink-0 pr-1.5">
-						{#each item.avatarUrls as avatarUrl, avatarIndex (avatarUrl)}
-							{#if avatarIndex === 0}
-								<Avatar
-									class="ring-2 ring-background"
-									name=""
-									size="sm"
-									src={avatarUrl}
-								/>
-							{:else}
-								<Avatar
-									class="-ml-1.5 ring-2 ring-background"
-									name=""
-									size="sm"
-									src={avatarUrl}
-								/>
-							{/if}
-						{/each}
-					</span>
+					<AvatarStack class="shrink-0 pr-1.5" urls={item.avatarUrls} />
 					<span class="w-24 shrink-0 text-right text-xs text-muted-foreground">
 						usado por
 						<strong class="font-bold text-foreground"

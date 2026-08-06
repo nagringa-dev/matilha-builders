@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { faviconUrl, normalizeToolUrl, slugify } from "./tool-url";
+import { faviconUrl, normalizeToolUrl, slugify, toolSlug } from "./tool-url";
 
 describe("normalizeToolUrl", () => {
 	it("normalizes a URL with query string and www prefix", () => {
@@ -98,6 +98,26 @@ describe("normalizeToolUrl", () => {
 		expect(normalizeToolUrl("localhost")).toBeNull();
 	});
 
+	it("keeps tenants on a platform suffix apart", () => {
+		const first = normalizeToolUrl("https://foo.vercel.app");
+		const second = normalizeToolUrl("https://bar.vercel.app");
+
+		expect(first?.key).toBe("foo.vercel.app");
+		expect(second?.key).toBe("bar.vercel.app");
+	});
+
+	it("keeps github pages tenants apart", () => {
+		expect(normalizeToolUrl("https://someone.github.io/docs")?.key).toBe(
+			"someone.github.io"
+		);
+	});
+
+	it("collapses a subdomain under a two-label country suffix", () => {
+		expect(normalizeToolUrl("https://app.exemplo.com.br/precos")?.key).toBe(
+			"exemplo.com.br"
+		);
+	});
+
 	it("produces the same key for two different URLs of the same tool", () => {
 		const first = normalizeToolUrl("https://www.screen.studio/pricing");
 		const second = normalizeToolUrl("screen.studio/download");
@@ -129,13 +149,47 @@ describe("slugify", () => {
 	});
 });
 
-describe("faviconUrl", () => {
-	it("returns null for a multi-tenant host", () => {
-		expect(faviconUrl("github.com")).toBeNull();
+describe("toolSlug", () => {
+	it("combines the name with the normalized key", () => {
+		expect(toolSlug("Linear", "linear.app")).toBe("linear-linear-app");
 	});
 
-	it("returns a duckduckgo icon url for a regular host", () => {
+	it("collapses to the key alone when the name already slugifies to it", () => {
+		expect(toolSlug("Screen Studio", "screen.studio")).toBe("screen-studio");
+	});
+
+	it("keeps a multi-tenant key distinct per tenant", () => {
+		const first = toolSlug("MCP", "github.com/anthropics/mcp");
+		const second = toolSlug("MCP", "github.com/other/mcp");
+
+		expect(first).not.toBe(second);
+	});
+
+	it("truncates a long name without leaving a trailing hyphen", () => {
+		const result = toolSlug(`${"a".repeat(40)} b`, "x.com");
+
+		expect(result).toBe(`${"a".repeat(30)}-x-com`);
+	});
+});
+
+describe("faviconUrl", () => {
+	it("returns null for a multi-tenant key, whose domain icon would be wrong", () => {
+		expect(faviconUrl("github.com/anthropics/mcp")).toBeNull();
+	});
+
+	it("returns a duckduckgo icon url for a domain key", () => {
 		expect(faviconUrl("stripe.com")).toBe(
+			"https://icons.duckduckgo.com/ip3/stripe.com.ico"
+		);
+	});
+
+	it("uses the key rather than the submitted subdomain", () => {
+		const normalized = normalizeToolUrl("https://docs.stripe.com/api");
+		if (!normalized) {
+			throw new Error("expected a normalized url");
+		}
+
+		expect(faviconUrl(normalized.key)).toBe(
 			"https://icons.duckduckgo.com/ip3/stripe.com.ico"
 		);
 	});

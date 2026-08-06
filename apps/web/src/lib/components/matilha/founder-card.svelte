@@ -3,7 +3,6 @@
 	import { formatRelative } from "$lib/format";
 	import Avatar from "./avatar.svelte";
 	import ProductChip from "./product-chip.svelte";
-	import ProductStatus from "./product-status.svelte";
 	import StreakBadge from "./streak-badge.svelte";
 
 	interface Product {
@@ -101,13 +100,7 @@
 										class="transition-colors group-hover:border-streak/50 group-hover:bg-streak/10"
 										product={p}
 										variant="tag"
-									>
-										{#snippet trailing()}
-											{#if p.status}
-												<ProductStatus status={p.status} />
-											{/if}
-										{/snippet}
-									</ProductChip>
+									/>
 								</motion.button>
 							{/each}
 						</AnimatePresence>

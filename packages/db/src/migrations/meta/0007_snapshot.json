@@ -1,5 +1,5 @@
 {
-  "id": "c23bdb0d-1ca8-4cf9-9147-36f404180678",
+  "id": "0f5a3fa8-e1f0-4f83-a502-a24b113e11ee",
   "prevId": "372aeced-0523-4648-bc3f-d606bc17bde0",
   "version": "7",
   "dialect": "postgresql",
@@ -774,6 +774,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "builder_tool_tool_id_idx": {
+          "name": "builder_tool_tool_id_idx",
+          "columns": [
+            {
+              "expression": "tool_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -799,25 +814,30 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "builder_tool_note_not_blank": {
+          "name": "builder_tool_note_not_blank",
+          "value": "btrim(\"builder_tool\".\"note\") <> ''"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.builder_tool_product": {
       "name": "builder_tool_product",
       "schema": "",
       "columns": {
-        "builder_tool_id": {
-          "name": "builder_tool_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "founder_id": {
+          "name": "founder_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         },
         "id": {
           "name": "id",
@@ -830,6 +850,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "tool_id": {
+          "name": "tool_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {
@@ -837,7 +863,13 @@
           "name": "builder_tool_product_unique",
           "columns": [
             {
-              "expression": "builder_tool_id",
+              "expression": "founder_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "tool_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -856,21 +888,21 @@
         }
       },
       "foreignKeys": {
-        "builder_tool_product_builder_tool_id_builder_tool_id_fk": {
-          "name": "builder_tool_product_builder_tool_id_builder_tool_id_fk",
-          "tableFrom": "builder_tool_product",
-          "tableTo": "builder_tool",
-          "columnsFrom": ["builder_tool_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "builder_tool_product_product_id_product_id_fk": {
           "name": "builder_tool_product_product_id_product_id_fk",
           "tableFrom": "builder_tool_product",
           "tableTo": "product",
           "columnsFrom": ["product_id"],
           "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "builder_tool_product_founder_id_tool_id_builder_tool_founder_id_tool_id_fk": {
+          "name": "builder_tool_product_founder_id_tool_id_builder_tool_founder_id_tool_id_fk",
+          "tableFrom": "builder_tool_product",
+          "tableTo": "builder_tool",
+          "columnsFrom": ["founder_id", "tool_id"],
+          "columnsTo": ["founder_id", "tool_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

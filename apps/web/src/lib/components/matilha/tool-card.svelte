@@ -3,7 +3,6 @@
 	import { toolCategoryLabel } from "@matilha-builders/db/tool-categories";
 	import { client } from "$lib/orpc";
 	import ProductChip from "./product-chip.svelte";
-	import ProductStatus from "./product-status.svelte";
 	import ToolLogo from "./tool-logo.svelte";
 
 	type Tool = Awaited<ReturnType<typeof client.tools.byFounder>>[number];
@@ -47,13 +46,7 @@
 	{#if tool.products.length}
 		<div class="flex flex-wrap gap-1.5">
 			{#each tool.products as product (product.id)}
-				<ProductChip {product} showImage={false} variant="tag">
-					{#snippet trailing()}
-						{#if product.status}
-							<ProductStatus status={product.status} />
-						{/if}
-					{/snippet}
-				</ProductChip>
+				<ProductChip {product} variant="tag" />
 			{/each}
 		</div>
 	{/if}

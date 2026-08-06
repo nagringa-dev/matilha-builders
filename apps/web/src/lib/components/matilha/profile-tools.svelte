@@ -7,9 +7,11 @@
 		useQueryClient,
 	} from "@tanstack/svelte-query";
 	import { Button } from "$lib/components/ui/button/index.js";
+	import { optimisticCache } from "$lib/optimistic-list";
 	import { client, orpc } from "$lib/orpc";
+	import { invalidateToolCaches } from "$lib/tool-cache";
+	import ToolAdoptDrawer from "./tool-adopt-drawer.svelte";
 	import ToolCard from "./tool-card.svelte";
-	import ToolDrawer from "./tool-drawer.svelte";
 
 	let {
 		founderId,
@@ -24,32 +26,10 @@
 	const queryClient = useQueryClient();
 	let showDrawer = $state(false);
 
-	function toolsQueryKey() {
-		return orpc.tools.byFounder.queryOptions({ input: { founderId } }).queryKey;
-	}
-
-	function patchTools(updater: (data: ToolsData) => ToolsData) {
-		queryClient.setQueryData<ToolsData>(toolsQueryKey(), (current) =>
-			current ? updater(current) : current
-		);
-	}
-
-	async function snapshotAndCancelTools() {
-		await queryClient.cancelQueries({ queryKey: toolsQueryKey() });
-		return queryClient.getQueryData<ToolsData>(toolsQueryKey());
-	}
-
-	function restoreTools(snapshot: ToolsData | undefined) {
-		if (snapshot) {
-			queryClient.setQueryData(toolsQueryKey(), snapshot);
-		}
-	}
-
-	function settleOtherCaches() {
-		queryClient.invalidateQueries({ queryKey: orpc.tools.byFounder.key() });
-		queryClient.invalidateQueries({ queryKey: orpc.tools.list.key() });
-		queryClient.invalidateQueries({ queryKey: orpc.tools.get.key() });
-	}
+	const toolsCache = optimisticCache<ToolsData>(
+		queryClient,
+		() => orpc.tools.byFounder.queryOptions({ input: { founderId } }).queryKey
+	);
 
 	const removeFromStack = createMutation(() => ({
 		...orpc.tools.removeFromStack.mutationOptions(),
@@ -58,14 +38,16 @@
 			_input,
 			context: { snapshot: ToolsData | undefined } | undefined
 		) => {
-			restoreTools(context?.snapshot);
+			toolsCache.restore(context?.snapshot);
 		},
 		onMutate: async (input) => {
-			const snapshot = await snapshotAndCancelTools();
-			patchTools((data) => data.filter((tool) => tool.toolId !== input.toolId));
+			const snapshot = await toolsCache.snapshotAndCancel();
+			toolsCache.patch((data) =>
+				data.filter((tool) => tool.toolId !== input.toolId)
+			);
 			return { snapshot };
 		},
-		onSettled: settleOtherCaches,
+		onSettled: () => invalidateToolCaches(queryClient),
 	}));
 
 	function removeTool(toolId: string) {
@@ -124,4 +106,4 @@
 	</section>
 {/if}
 
-<ToolDrawer bind:open={showDrawer} />
+<ToolAdoptDrawer bind:open={showDrawer} />

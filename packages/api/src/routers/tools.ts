@@ -16,9 +16,9 @@ import {
 	isNotNull,
 	isNull,
 	max,
-	or,
 	sql,
 } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { z } from "zod";
 
 import { protectedProcedure } from "../index";
@@ -29,44 +29,32 @@ import {
 } from "../lib/constants";
 import { paginate } from "../lib/pagination";
 import { computeCurrentStreak } from "../lib/streak";
-import {
-	faviconUrl,
-	type NormalizedToolUrl,
-	normalizeToolUrl,
-	slugify,
-} from "../lib/tool-url";
+import { faviconUrl, normalizeToolUrl, toolSlug } from "../lib/tool-url";
 
-const MAX_SLUG_ATTEMPTS = 10;
+// Allowlist: keeps normalizedKey and timestamps off the wire.
+const catalogFields = {
+	category: tool.category,
+	description: tool.description,
+	id: tool.id,
+	logoUrl: tool.logoUrl,
+	name: tool.name,
+	slug: tool.slug,
+	url: tool.url,
+};
 
-const hasNoteCondition = and(
-	isNotNull(builderTool.note),
-	sql`btrim(${builderTool.note}) <> ''`
-);
+const adopterRelations = {
+	founder: { with: { user: true } },
+	products: { with: { product: true } },
+} as const;
 
-const noNoteCondition = or(
-	isNull(builderTool.note),
-	sql`btrim(${builderTool.note}) = ''`
-);
+type AdopterRow = Awaited<
+	ReturnType<
+		typeof db.query.builderTool.findMany<{ with: typeof adopterRelations }>
+	>
+>[number];
 
-async function fetchAdopters(
-	toolId: string,
-	options: { limit?: number; offset?: number; onlyNoted?: boolean }
-) {
-	const notePriority = sql`case when ${builderTool.note} is not null and btrim(${builderTool.note}) <> '' then 1 else 0 end`;
-	const rows = await db.query.builderTool.findMany({
-		limit: options.limit,
-		offset: options.offset,
-		orderBy: [desc(notePriority), desc(builderTool.createdAt)],
-		where: options.onlyNoted
-			? and(eq(builderTool.toolId, toolId), hasNoteCondition)
-			: eq(builderTool.toolId, toolId),
-		with: {
-			founder: { with: { user: true } },
-			products: { with: { product: true } },
-		},
-	});
-	const now = new Date();
-	return rows.map((row) => ({
+function toAdopter(row: AdopterRow, now: Date) {
+	return {
 		avatarUrl: row.founder.avatarUrl,
 		founderId: row.founderId,
 		name: row.founder.user.name,
@@ -77,68 +65,66 @@ async function fetchAdopters(
 			row.founder.lastCheckInAt,
 			now
 		),
-	}));
+	};
 }
 
-async function createToolWithUniqueSlug(
-	input: {
-		category: (typeof TOOL_CATEGORY_SLUGS)[number];
-		description: string | null;
-		name: string;
-	},
-	normalized: NormalizedToolUrl
-) {
-	const baseSlug = slugify(input.name);
-	for (let attempt = 1; attempt <= MAX_SLUG_ATTEMPTS; attempt += 1) {
-		const slug = attempt === 1 ? baseSlug : `${baseSlug}-${attempt}`;
-		// biome-ignore lint/performance/noAwaitInLoops: each attempt depends on whether the previous insert or re-select found a row; the attempts are inherently sequential.
-		const [inserted] = await db
-			.insert(tool)
-			.values({
-				category: input.category,
-				description: input.description,
-				logoUrl: faviconUrl(normalized.host),
-				name: input.name,
-				normalizedKey: normalized.key,
-				slug,
-				url: normalized.url,
-			})
-			.onConflictDoNothing()
-			.returning();
-		if (inserted) {
-			return inserted;
-		}
-		const [concurrent] = await db
-			.select()
-			.from(tool)
-			.where(eq(tool.normalizedKey, normalized.key))
-			.limit(1);
-		if (concurrent) {
-			return concurrent;
-		}
-	}
-	throw new ORPCError("BAD_REQUEST", {
-		message: "Não deu pra gerar um endereço único pra essa ferramenta.",
+async function fetchNotedAdopters(toolId: string, limit: number) {
+	const rows = await db.query.builderTool.findMany({
+		limit,
+		orderBy: desc(builderTool.createdAt),
+		where: and(eq(builderTool.toolId, toolId), isNotNull(builderTool.note)),
+		with: adopterRelations,
 	});
+	const now = new Date();
+	return rows.map((row) => toAdopter(row, now));
 }
 
-async function upsertAdoption(
-	toolId: string,
-	founderId: string,
-	note: string | null
-) {
-	const [adoption] = await db
-		.insert(builderTool)
-		.values({ founderId, note, toolId })
-		.onConflictDoUpdate({
-			set: { note },
-			target: [builderTool.founderId, builderTool.toolId],
+async function fetchAllAdopters(toolId: string, offset: number) {
+	const rows = await db.query.builderTool.findMany({
+		limit: PAGE_SIZE,
+		offset,
+		orderBy: [
+			desc(sql`(${builderTool.note} is not null)`),
+			desc(builderTool.createdAt),
+		],
+		where: eq(builderTool.toolId, toolId),
+		with: adopterRelations,
+	});
+	const now = new Date();
+	return rows.map((row) => toAdopter(row, now));
+}
+
+// Capped in SQL so a popular tool does not ship every adoption row to render
+// eight faces.
+function avatarPreviewQuery(where: Parameters<typeof and>[0]) {
+	const ranked = db
+		.select({
+			avatarUrl: sql<string>`${founder.avatarUrl}`.as("avatar_url"),
+			rank: sql<number>`row_number() over (
+				partition by ${builderTool.toolId}
+				order by ${builderTool.createdAt} desc
+			)`.as("rank"),
+			toolId: builderTool.toolId,
 		})
-		.returning({ id: builderTool.id });
-	if (!adoption) {
-		throw new ORPCError("NOT_FOUND");
-	}
-	return adoption.id;
+		.from(builderTool)
+		.innerJoin(founder, eq(founder.userId, builderTool.founderId))
+		.where(and(isNotNull(founder.avatarUrl), where))
+		.as("ranked");
+
+	return db
+		.select({ avatarUrl: ranked.avatarUrl, toolId: ranked.toolId })
+		.from(ranked)
+		.where(sql`${ranked.rank} <= ${TOOL_AVATAR_PREVIEW_LIMIT}`)
+		.orderBy(ranked.rank);
+}
+
+async function findToolByKey(key: string) {
+	const [row] = await db
+		.select(catalogFields)
+		.from(tool)
+		.where(eq(tool.normalizedKey, key))
+		.limit(1);
+	return row ?? null;
 }
 
 async function fetchViewerAdoption(toolId: string, founderId: string) {
@@ -150,7 +136,10 @@ async function fetchViewerAdoption(toolId: string, founderId: string) {
 		.from(builderTool)
 		.leftJoin(
 			builderToolProduct,
-			eq(builderToolProduct.builderToolId, builderTool.id)
+			and(
+				eq(builderToolProduct.founderId, builderTool.founderId),
+				eq(builderToolProduct.toolId, builderTool.toolId)
+			)
 		)
 		.where(
 			and(eq(builderTool.toolId, toolId), eq(builderTool.founderId, founderId))
@@ -168,45 +157,86 @@ async function fetchViewerAdoption(toolId: string, founderId: string) {
 	};
 }
 
-async function replaceProductLinks(
-	builderToolId: string,
-	productIds: string[],
-	founderId: string
-) {
-	if (productIds.length > 0) {
-		const owned = await db
-			.select({ id: product.id })
-			.from(product)
-			.where(
-				and(inArray(product.id, productIds), eq(product.founderId, founderId))
-			);
-		if (owned.length !== productIds.length) {
-			throw new ORPCError("NOT_FOUND");
-		}
+// Must run before any write, so a stale client cannot leave a half-applied
+// adoption behind.
+async function assertOwnsProducts(productIds: string[], founderId: string) {
+	if (productIds.length === 0) {
+		return;
 	}
-	await db
-		.delete(builderToolProduct)
-		.where(eq(builderToolProduct.builderToolId, builderToolId));
-	if (productIds.length > 0) {
-		await db
-			.insert(builderToolProduct)
-			.values(productIds.map((productId) => ({ builderToolId, productId })));
+	const owned = await db
+		.select({ id: product.id })
+		.from(product)
+		.where(
+			and(inArray(product.id, productIds), eq(product.founderId, founderId))
+		);
+	if (owned.length !== productIds.length) {
+		throw new ORPCError("NOT_FOUND");
 	}
 }
+
+// neon-http has no interactive transactions, so batch is the atomic unit here.
+// Keep note and links in one batch or an update can leave the links cleared.
+function writeAdoption(input: {
+	founderId: string;
+	note: string | null;
+	productIds: string[];
+	toolId: string;
+}) {
+	const { founderId, note, productIds, toolId } = input;
+	const statements: [BatchItem<"pg">, ...BatchItem<"pg">[]] = [
+		db
+			.insert(builderTool)
+			.values({ founderId, note, toolId })
+			.onConflictDoUpdate({
+				set: { note },
+				target: [builderTool.founderId, builderTool.toolId],
+			}),
+		db
+			.delete(builderToolProduct)
+			.where(
+				and(
+					eq(builderToolProduct.founderId, founderId),
+					eq(builderToolProduct.toolId, toolId)
+				)
+			),
+	];
+	if (productIds.length > 0) {
+		statements.push(
+			db
+				.insert(builderToolProduct)
+				.values(
+					productIds.map((productId) => ({ founderId, productId, toolId }))
+				)
+		);
+	}
+	return db.batch(statements);
+}
+
+const adoptionInput = {
+	note: z.string().optional(),
+	productIds: z.array(z.string()).default([]),
+};
+
+const addToStackInput = z.discriminatedUnion("kind", [
+	z.object({
+		...adoptionInput,
+		kind: z.literal("existing"),
+		url: z.string().min(1),
+	}),
+	z.object({
+		...adoptionInput,
+		category: z.enum(TOOL_CATEGORY_SLUGS),
+		description: z.string().optional(),
+		kind: z.literal("new"),
+		name: z.string().min(1),
+		url: z.string().min(1),
+	}),
+]);
 
 export const toolsRouter = {
 	tools: {
 		addToStack: protectedProcedure
-			.input(
-				z.object({
-					category: z.enum(TOOL_CATEGORY_SLUGS).optional(),
-					description: z.string().optional(),
-					name: z.string().optional(),
-					note: z.string().optional(),
-					productIds: z.array(z.string()).default([]),
-					url: z.string().min(1),
-				})
-			)
+			.input(addToStackInput)
 			.handler(async ({ input, context }) => {
 				const founderId = context.session.user.id;
 				const normalized = normalizeToolUrl(input.url);
@@ -215,40 +245,41 @@ export const toolsRouter = {
 						message: "Link inválido. Confere o endereço da ferramenta.",
 					});
 				}
+				await assertOwnsProducts(input.productIds, founderId);
 
-				let [existingTool] = await db
-					.select()
-					.from(tool)
-					.where(eq(tool.normalizedKey, normalized.key))
-					.limit(1);
+				// Another founder may have inserted the same URL in between, so the
+				// insert yields to whatever is already keyed on it.
+				const [inserted] =
+					input.kind === "new"
+						? await db
+								.insert(tool)
+								.values({
+									category: input.category,
+									description: input.description?.trim() || null,
+									logoUrl: faviconUrl(normalized.key),
+									name: input.name.trim(),
+									normalizedKey: normalized.key,
+									slug: toolSlug(input.name, normalized.key),
+									url: normalized.url,
+								})
+								.onConflictDoNothing({ target: tool.normalizedKey })
+								.returning(catalogFields)
+						: [];
 
-				if (!existingTool) {
-					if (!(input.name && input.category)) {
-						throw new ORPCError("BAD_REQUEST", {
-							message:
-								"Nome e categoria são obrigatórios para cadastrar uma ferramenta nova.",
-						});
-					}
-					existingTool = await createToolWithUniqueSlug(
-						{
-							category: input.category,
-							description: input.description?.trim() || null,
-							name: input.name.trim(),
-						},
-						normalized
-					);
+				const target = inserted ?? (await findToolByKey(normalized.key));
+				if (!target) {
+					throw new ORPCError("NOT_FOUND", {
+						message: "Essa ferramenta ainda não está no catálogo.",
+					});
 				}
 
-				const note = input.note?.trim() || null;
-				const builderToolId = await upsertAdoption(
-					existingTool.id,
+				await writeAdoption({
 					founderId,
-					note
-				);
-
-				await replaceProductLinks(builderToolId, input.productIds, founderId);
-
-				return { slug: existingTool.slug, toolId: existingTool.id };
+					note: input.note?.trim() || null,
+					productIds: input.productIds,
+					toolId: target.id,
+				});
+				return { slug: target.slug, toolId: target.id };
 			}),
 		byFounder: protectedProcedure
 			.input(z.object({ founderId: z.string() }))
@@ -278,7 +309,7 @@ export const toolsRouter = {
 			.handler(async ({ input, context }) => {
 				const founderId = context.session.user.id;
 				const [row] = await db
-					.select()
+					.select(catalogFields)
 					.from(tool)
 					.where(eq(tool.slug, input.slug))
 					.limit(1);
@@ -288,11 +319,8 @@ export const toolsRouter = {
 
 				const [counts] = await db
 					.select({
-						noted:
-							sql<number>`count(*) filter (where ${hasNoteCondition})`.mapWith(
-								Number
-							),
-						total: count(builderTool.id),
+						noted: count(builderTool.note).mapWith(Number),
+						total: count(builderTool.id).mapWith(Number),
 					})
 					.from(builderTool)
 					.where(eq(builderTool.toolId, row.id));
@@ -302,36 +330,20 @@ export const toolsRouter = {
 
 				const [notedAdopters, silentAvatarRows, viewerAdoption] =
 					await Promise.all([
-						fetchAdopters(row.id, {
-							limit: TOOL_NOTED_ADOPTERS_PAGE_SIZE,
-							onlyNoted: notedCount > 0,
-						}),
-						db
-							.select({ avatarUrl: founder.avatarUrl })
-							.from(builderTool)
-							.innerJoin(founder, eq(founder.userId, builderTool.founderId))
-							.where(
-								and(
-									eq(builderTool.toolId, row.id),
-									noNoteCondition,
-									isNotNull(founder.avatarUrl)
-								)
-							)
-							.orderBy(desc(builderTool.createdAt))
-							.limit(TOOL_AVATAR_PREVIEW_LIMIT),
+						fetchNotedAdopters(row.id, TOOL_NOTED_ADOPTERS_PAGE_SIZE),
+						avatarPreviewQuery(
+							and(eq(builderTool.toolId, row.id), isNull(builderTool.note))
+						),
 						fetchViewerAdoption(row.id, founderId),
 					]);
 
 				return {
 					...row,
 					adopterCount,
-					hasMoreAdopters:
-						(notedCount === 0 ? adopterCount : notedCount) >
-						notedAdopters.length,
 					notedAdopters,
 					notedCount,
 					silentAvatarUrls: silentAvatarRows.map(
-						(silentRow) => silentRow.avatarUrl as string
+						(silentRow) => silentRow.avatarUrl
 					),
 					silentCount: adopterCount - notedCount,
 					viewerAdoption,
@@ -373,40 +385,15 @@ export const toolsRouter = {
 					.offset(cursor);
 
 				const toolIds = rows.map((toolRow) => toolRow.id);
-				const avatarsByTool = new Map<string, string[]>();
-				if (toolIds.length > 0) {
-					const avatarRows = await db
-						.select({
-							avatarUrl: founder.avatarUrl,
-							toolId: builderTool.toolId,
-						})
-						.from(builderTool)
-						.innerJoin(founder, eq(founder.userId, builderTool.founderId))
-						.where(
-							and(
-								inArray(builderTool.toolId, toolIds),
-								isNotNull(founder.avatarUrl)
-							)
-						)
-						.orderBy(desc(builderTool.createdAt));
-					for (const avatarRow of avatarRows) {
-						const existing = avatarsByTool.get(avatarRow.toolId) ?? [];
-						if (existing.length < TOOL_AVATAR_PREVIEW_LIMIT) {
-							existing.push(avatarRow.avatarUrl as string);
-						}
-						avatarsByTool.set(avatarRow.toolId, existing);
-					}
-				}
+				const avatarRows = toolIds.length
+					? await avatarPreviewQuery(inArray(builderTool.toolId, toolIds))
+					: [];
+				const avatarsByTool = Map.groupBy(avatarRows, (row) => row.toolId);
 
 				const items = rows.map((row) => ({
-					adopterCount: row.adopterCount,
-					avatarUrls: avatarsByTool.get(row.id) ?? [],
-					category: row.category,
-					id: row.id,
-					logoUrl: row.logoUrl,
-					name: row.name,
-					slug: row.slug,
-					url: row.url,
+					...row,
+					avatarUrls:
+						avatarsByTool.get(row.id)?.map((entry) => entry.avatarUrl) ?? [],
 				}));
 				return paginate(items, cursor);
 			}),
@@ -427,10 +414,7 @@ export const toolsRouter = {
 					throw new ORPCError("NOT_FOUND");
 				}
 				const cursor = input.cursor ?? 0;
-				const items = await fetchAdopters(toolRow.id, {
-					limit: PAGE_SIZE,
-					offset: cursor,
-				});
+				const items = await fetchAllAdopters(toolRow.id, cursor);
 				return paginate(items, cursor);
 			}),
 		lookup: protectedProcedure
@@ -440,11 +424,7 @@ export const toolsRouter = {
 				if (!normalized) {
 					return { adoption: null, tool: null };
 				}
-				const [row] = await db
-					.select()
-					.from(tool)
-					.where(eq(tool.normalizedKey, normalized.key))
-					.limit(1);
+				const row = await findToolByKey(normalized.key);
 				if (!row) {
 					return { adoption: null, tool: null };
 				}
@@ -475,28 +455,35 @@ export const toolsRouter = {
 		updateStack: protectedProcedure
 			.input(
 				z.object({
-					note: z.string().optional(),
-					productIds: z.array(z.string()).default([]),
+					...adoptionInput,
 					toolId: z.string(),
 				})
 			)
 			.handler(async ({ input, context }) => {
 				const founderId = context.session.user.id;
-				const note = input.note?.trim() || null;
+				await assertOwnsProducts(input.productIds, founderId);
+
+				// Must not silently re-adopt a tool dropped in another tab.
 				const [existing] = await db
-					.update(builderTool)
-					.set({ note })
+					.select({ id: builderTool.id })
+					.from(builderTool)
 					.where(
 						and(
 							eq(builderTool.toolId, input.toolId),
 							eq(builderTool.founderId, founderId)
 						)
 					)
-					.returning({ id: builderTool.id });
+					.limit(1);
 				if (!existing) {
 					throw new ORPCError("NOT_FOUND");
 				}
-				await replaceProductLinks(existing.id, input.productIds, founderId);
+
+				await writeAdoption({
+					founderId,
+					note: input.note?.trim() || null,
+					productIds: input.productIds,
+					toolId: input.toolId,
+				});
 			}),
 		updateTool: protectedProcedure
 			.input(
@@ -509,6 +496,7 @@ export const toolsRouter = {
 			)
 			.handler(async ({ input, context }) => {
 				const founderId = context.session.user.id;
+				// The catalog is community-owned: any adopter can correct it for all.
 				const [adoption] = await db
 					.select({ id: builderTool.id })
 					.from(builderTool)
@@ -530,11 +518,11 @@ export const toolsRouter = {
 					.update(tool)
 					.set({
 						category: input.category,
-						description: input.description || null,
-						name: input.name,
+						description: input.description?.trim() || null,
+						name: input.name.trim(),
 					})
 					.where(eq(tool.id, input.toolId))
-					.returning();
+					.returning(catalogFields);
 				if (!row) {
 					throw new ORPCError("NOT_FOUND");
 				}
