@@ -12,6 +12,7 @@
 	import CheckInSuccessState from "$lib/components/matilha/check-in-success-state.svelte";
 	import Field from "$lib/components/matilha/field.svelte";
 	import FormTextareaField from "$lib/components/matilha/form-textarea-field.svelte";
+
 	import OptionalCheckInField from "$lib/components/matilha/optional-check-in-field.svelte";
 	import ProductSelectCard from "$lib/components/matilha/product-select-card.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
