@@ -10,40 +10,102 @@
 		DrawerHeader,
 		DrawerTitle,
 	} from "$lib/components/ui/drawer/index.js";
+	import {
+		Select,
+		SelectContent,
+		SelectItem,
+		SelectTrigger,
+	} from "$lib/components/ui/select/index.js";
+	import Field from "./field.svelte";
 	import FormTextareaField from "./form-textarea-field.svelte";
+	import OptionalCheckInField from "./optional-check-in-field.svelte";
+	import ProductSelectCard from "./product-select-card.svelte";
+
+	interface Product {
+		id: string;
+		imageUrl: string | null;
+		link: string | null;
+		name: string;
+		status: "validating" | "building" | "launched";
+	}
 
 	interface Values {
 		blocked: string;
 		help: string;
+		productId: string;
 		progress: string;
+	}
+
+	interface FormValues extends Values {
+		blockedEnabled: boolean;
+		helpEnabled: boolean;
 	}
 
 	let {
 		open = $bindable(false),
 		isSaving = false,
 		onSave,
+		products = [],
 	}: {
 		open?: boolean;
 		isSaving?: boolean;
 		onSave: (value: Values) => void;
+		products?: Product[];
 	} = $props();
 
-	const schema = z.object({
-		blocked: z.string().min(1, "Conta o que travou"),
-		help: z.string(),
-		progress: z.string().min(1, "Conta o que avançou"),
-	});
+	const schema = z
+		.object({
+			blocked: z.string(),
+			blockedEnabled: z.boolean(),
+			help: z.string(),
+			helpEnabled: z.boolean(),
+			productId: z.string().min(1, "Escolhe um produto"),
+			progress: z.string().min(1, "Conta o que avançou"),
+		})
+		.superRefine((value, context) => {
+			if (value.blockedEnabled && !value.blocked.trim()) {
+				context.addIssue({
+					code: "custom",
+					message: "Conta o que travou",
+					path: ["blocked"],
+				});
+			}
+			if (value.helpEnabled && !value.help.trim()) {
+				context.addIssue({
+					code: "custom",
+					message: "Conta como a comunidade pode ajudar",
+					path: ["help"],
+				});
+			}
+		});
 
 	const form = createForm(() => ({
-		defaultValues: { blocked: "", help: "", progress: "" },
-		onSubmit: ({ value }) => onSave(value),
+		defaultValues: {
+			blocked: "",
+			blockedEnabled: false,
+			help: "",
+			helpEnabled: false,
+			productId: "",
+			progress: "",
+		},
+		onSubmit: ({ value }) =>
+			onSave({
+				blocked: value.blocked,
+				help: value.help,
+				productId: value.productId,
+				progress: value.progress,
+			}),
 		validators: { onSubmit: schema },
 	}));
 
 	// Called before opening: a reactive effect would reset too late, mounting
 	// the fields empty.
 	export function prime(values: Values) {
-		form.reset(values);
+		form.reset({
+			...values,
+			blockedEnabled: Boolean(values.blocked),
+			helpEnabled: Boolean(values.help),
+		});
 	}
 
 	type SubmitState = Pick<typeof form.state, "canSubmit" | "isSubmitting">;
@@ -58,13 +120,48 @@
 				<DrawerTitle>Editar check-in</DrawerTitle>
 			</DrawerHeader>
 			<form
-				class="flex flex-col gap-4 px-4 pb-2"
+				class="flex flex-col gap-3 px-4 pb-2"
 				onsubmit={(event) => {
 					event.preventDefault();
 					event.stopPropagation();
 					form.handleSubmit();
 				}}
 			>
+				<form.Field name="productId">
+					{#snippet children(field)}
+						{@const selectedProduct = products.find(
+							(product) => product.id === field.state.value
+						)}
+						<Field label="Sobre qual produto">
+							<Select
+								onValueChange={(value) => field.handleChange(value ?? "")}
+								type="single"
+								value={field.state.value}
+							>
+								<SelectTrigger
+									class="min-h-14 w-full data-[size=default]:h-auto"
+								>
+									{#if selectedProduct}
+										<ProductSelectCard product={selectedProduct} />
+									{:else}
+										<span class="text-muted-foreground">Escolher produto</span>
+									{/if}
+								</SelectTrigger>
+								<SelectContent>
+									{#each products as product (product.id)}
+										<SelectItem
+											class="py-2 pr-9"
+											label={product.name}
+											value={product.id}
+										>
+											<ProductSelectCard {product} />
+										</SelectItem>
+									{/each}
+								</SelectContent>
+							</Select>
+						</Field>
+					{/snippet}
+				</form.Field>
 				<form.Field name="progress">
 					{#snippet children(field)}
 						<FormTextareaField
@@ -75,26 +172,36 @@
 						/>
 					{/snippet}
 				</form.Field>
-				<form.Field name="blocked">
-					{#snippet children(field)}
-						<FormTextareaField
-							{field}
-							label="O que travou"
-							placeholder="O que te segurou"
-							rows={3}
-						/>
+				<form.Field name="blockedEnabled">
+					{#snippet children(enabledField)}
+						<form.Field name="blocked">
+							{#snippet children(field)}
+								<OptionalCheckInField
+									enabled={enabledField.state.value}
+									{field}
+									label="Travou nesta semana?"
+									onEnabledChange={enabledField.handleChange}
+									placeholder="O que te segurou"
+									tone="warning"
+								/>
+							{/snippet}
+						</form.Field>
 					{/snippet}
 				</form.Field>
-				<form.Field name="help">
-					{#snippet children(field)}
-						<FormTextareaField
-							{field}
-							hint="opcional"
-							label="No que precisa de ajuda"
-							placeholder="A matilha te ajuda"
-							rows={2}
-							showError={false}
-						/>
+				<form.Field name="helpEnabled">
+					{#snippet children(enabledField)}
+						<form.Field name="help">
+							{#snippet children(field)}
+								<OptionalCheckInField
+									enabled={enabledField.state.value}
+									{field}
+									label="Precisa de ajuda?"
+									onEnabledChange={enabledField.handleChange}
+									placeholder="Como a matilha pode ajudar?"
+									tone="danger"
+								/>
+							{/snippet}
+						</form.Field>
 					{/snippet}
 				</form.Field>
 				<form.Subscribe

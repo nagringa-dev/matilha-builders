@@ -158,7 +158,7 @@ export const matilhaRouter = {
 		create: protectedProcedure
 			.input(
 				z.object({
-					blocked: z.string().min(1),
+					blocked: z.string(),
 					help: z.string().optional(),
 					productId: z.string().optional(),
 					progress: z.string().min(1),
@@ -334,20 +334,23 @@ export const matilhaRouter = {
 		update: protectedProcedure
 			.input(
 				z.object({
-					blocked: z.string().min(1),
+					blocked: z.string(),
 					help: z.string().optional(),
 					id: z.string(),
+					productId: z.string().min(1),
 					progress: z.string().min(1),
 				})
 			)
 			.handler(async ({ input, context }) => {
 				const founderId = context.session.user.id;
 				await requireEditableCheckIn(input.id, founderId);
+				await requireOwnedProduct(input.productId, founderId);
 				await db
 					.update(checkIn)
 					.set({
 						blocked: input.blocked,
 						help: input.help ?? null,
+						productId: input.productId,
 						progress: input.progress,
 					})
 					.where(eq(checkIn.id, input.id));

@@ -17,6 +17,7 @@
 		TooltipContent,
 		TooltipTrigger,
 	} from "$lib/components/ui/tooltip/index.js";
+	import { getProductFaviconUrl } from "$lib/product-favicon.js";
 	import { cn } from "$lib/utils.js";
 	import ProductStatus, {
 		PRODUCT_STATUS_LABELS,
@@ -77,12 +78,12 @@
 	);
 
 	const initial = $derived((product.name || "?").charAt(0).toUpperCase());
+	const faviconUrl = $derived(getProductFaviconUrl(product.link));
 
-	// Products carry whatever og:image their own site advertises, so a link can
-	// point at a URL that 404s. Tracking the failed URL (rather than a boolean)
-	// makes the fallback reset on its own when the product gets a new image.
+	// Product cover images and compact favicons can both fail independently.
+	// Tracking the failed URL (rather than a boolean) makes a later URL retry.
 	let failedImageUrl = $state<string | null>(null);
-	const showInitial = $derived(
+	const showCoverInitial = $derived(
 		!product.imageUrl || failedImageUrl === product.imageUrl
 	);
 
@@ -90,9 +91,14 @@
 		failedImageUrl = product.imageUrl ?? null;
 	}
 
-	const tagDisplayName = $derived(
-		product.name.length > 10 ? `${product.name.slice(0, 10)}…` : product.name
+	let failedFaviconUrl = $state<string | null>(null);
+	const showFaviconInitial = $derived(
+		!faviconUrl || failedFaviconUrl === faviconUrl
 	);
+
+	function handleFaviconError() {
+		failedFaviconUrl = faviconUrl;
+	}
 
 	const detailSections = $derived(
 		[
@@ -107,10 +113,12 @@
 </script>
 
 {#snippet thumb()}
-	{#if showInitial}
+	{#if showFaviconInitial}
 		<span
+			aria-hidden="true"
 			class={cn(
-				"flex shrink-0 items-center justify-center bg-muted font-semibold text-muted-foreground ring-1 ring-border",
+				"flex shrink-0 items-center justify-center bg-muted font-semibold text-muted-foreground",
+				variant === "tag" ? "" : "ring-1 ring-border",
 				dims,
 				radius,
 				initialSize
@@ -119,12 +127,17 @@
 			{initial}
 		</span>
 	{:else}
-		<!-- biome-ignore lint/a11y/noNoninteractiveElementInteractions: onerror is a load-failure event, not a user interaction -->
+		<!-- biome-ignore lint/a11y/noNoninteractiveElementInteractions: onerror only handles a failed favicon -->
 		<img
-			alt="Imagem do produto {product.name}"
-			class={cn("shrink-0 object-cover ring-1 ring-border", dims, radius)}
-			onerror={handleImageError}
-			src={product.imageUrl}
+			alt=""
+			class={cn(
+				"shrink-0 object-cover",
+				variant === "tag" ? "" : "ring-1 ring-border",
+				dims,
+				radius
+			)}
+			onerror={handleFaviconError}
+			src={faviconUrl ?? undefined}
 		>
 	{/if}
 {/snippet}
@@ -213,8 +226,7 @@
 				<span
 					{...props}
 					class={cn(
-						"inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-card/60 py-0.5 pr-2.5 text-left text-xs font-medium",
-						showImage ? "pl-0.5" : "pl-2.5",
+						"inline-flex min-w-0 items-center gap-1.5 text-left text-xs font-medium",
 						className
 					)}
 				>
@@ -223,21 +235,20 @@
 					{/if}
 					{#if product.link && showLink}
 						<a
-							class="flex items-center gap-0.5 underline decoration-muted-foreground/40 underline-offset-2 transition-colors hover:text-streak hover:decoration-streak"
+							class="min-w-0 truncate underline decoration-muted-foreground/40 underline-offset-2 transition-colors hover:text-streak hover:decoration-streak"
 							href={product.link}
 							onclick={(e) => e.stopPropagation()}
 							rel="noreferrer"
 							target="_blank"
 						>
-							<span>{tagDisplayName}</span>
-							<ExternalLinkIcon class="size-3 shrink-0" />
+							{product.name}
 						</a>
 					{:else}
-						<span>{tagDisplayName}</span>
+						<span class="truncate">{product.name}</span>
 					{/if}
 					{#if trailing}
 						{@render trailing()}
-					{:else if product.status}
+					{:else if product.status && showStatus}
 						<ProductStatus status={product.status} />
 					{/if}
 				</span>
@@ -259,7 +270,7 @@
 		<div
 			class={cn("w-full overflow-hidden rounded-xl bg-muted ring-1 ring-border", coverHeight)}
 		>
-			{#if showInitial}
+			{#if showCoverInitial}
 				<div
 					class="flex h-full w-full items-center justify-center font-bold text-3xl text-muted-foreground"
 				>
