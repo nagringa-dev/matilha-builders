@@ -8,6 +8,7 @@
 	import {
 		createMutation,
 		createQuery,
+		keepPreviousData,
 		useQueryClient,
 	} from "@tanstack/svelte-query";
 	import { Input } from "$lib/components/ui/input/index.js";
@@ -69,6 +70,7 @@
 	const lookupQuery = createQuery(() => ({
 		...orpc.tools.lookup.queryOptions({ input: { url: debouncedUrl } }),
 		enabled: open && debouncedUrl.trim().length > 0,
+		placeholderData: keepPreviousData,
 	}));
 
 	// Pasting a URL already in the stack turns this into an edit. Never load
@@ -91,7 +93,7 @@
 
 	const foundTool = $derived(lookupQuery.data?.tool ?? null);
 	const hasUrl = $derived(debouncedUrl.trim().length > 0);
-	const isResolving = $derived(hasUrl && lookupQuery.isFetching);
+	const isResolving = $derived(hasUrl && lookupQuery.isPending);
 	const isNewTool = $derived(hasUrl && !(isResolving || foundTool));
 	const alreadyInStack = $derived(!!lookupQuery.data?.adoption);
 
@@ -105,7 +107,9 @@
 	}));
 
 	const canSubmit = $derived(
-		hasUrl && !isResolving && (!!foundTool || (!!name.trim() && !!category))
+		hasUrl &&
+			!lookupQuery.isFetching &&
+			(!!foundTool || (!!name.trim() && !!category))
 	);
 
 	function submit() {
@@ -187,7 +191,7 @@
 				<SelectTrigger class="w-full">
 					{category ? toolCategoryLabel(category) : "Selecione"}
 				</SelectTrigger>
-				<SelectContent>
+				<SelectContent avoidCollisions={false} class="max-h-56" side="bottom">
 					{#each TOOL_CATEGORIES as entry (entry.slug)}
 						<SelectItem label={entry.label} value={entry.slug}>
 							{entry.label}

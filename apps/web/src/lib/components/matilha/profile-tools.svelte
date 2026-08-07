@@ -61,7 +61,7 @@
 
 {#snippet addTile()}
 	<button
-		class="flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border text-xs font-medium text-muted-foreground transition-colors hover:border-streak/45 hover:text-foreground"
+		class="flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border px-4 py-6 text-center text-xs font-medium text-muted-foreground transition-colors hover:border-streak/45 hover:text-foreground"
 		onclick={openDrawer}
 		type="button"
 	>
