@@ -6,6 +6,7 @@ import {
 	pgTable,
 	text,
 	timestamp,
+	unique,
 	uniqueIndex,
 } from "drizzle-orm/pg-core";
 
@@ -58,7 +59,10 @@ export const builderTool = pgTable(
 			.notNull(),
 	},
 	(table) => [
-		uniqueIndex("builder_tool_unique").on(table.founderId, table.toolId),
+		// A constraint, not a bare index: builder_tool_product's composite foreign
+		// key references these columns, and only a constraint is emitted with the
+		// table itself, so it always exists before the key that depends on it.
+		unique("builder_tool_unique").on(table.founderId, table.toolId),
 		// The (founder, tool) unique index cannot serve a tool-only filter.
 		index("builder_tool_tool_id_idx").on(table.toolId),
 		check("builder_tool_note_not_blank", sql`btrim(${table.note}) <> ''`),

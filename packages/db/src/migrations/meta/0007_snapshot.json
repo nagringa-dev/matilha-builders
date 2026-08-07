@@ -1,5 +1,5 @@
 {
-  "id": "0f5a3fa8-e1f0-4f83-a502-a24b113e11ee",
+  "id": "9bf0b759-10ae-4eba-b0a7-8fdf931081e1",
   "prevId": "372aeced-0523-4648-bc3f-d606bc17bde0",
   "version": "7",
   "dialect": "postgresql",
@@ -110,8 +110,12 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -198,8 +202,12 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -209,7 +217,9 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": ["token"]
+          "columns": [
+            "token"
+          ]
         }
       },
       "policies": {},
@@ -287,7 +297,9 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         }
       },
       "policies": {},
@@ -421,8 +433,12 @@
           "name": "check_in_founder_id_user_id_fk",
           "tableFrom": "check_in",
           "tableTo": "user",
-          "columnsFrom": ["founder_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "founder_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -430,8 +446,12 @@
           "name": "check_in_product_id_product_id_fk",
           "tableFrom": "check_in",
           "tableTo": "product",
-          "columnsFrom": ["product_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "product_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -500,8 +520,12 @@
           "name": "check_in_dismissal_vote_check_in_id_check_in_id_fk",
           "tableFrom": "check_in_dismissal_vote",
           "tableTo": "check_in",
-          "columnsFrom": ["check_in_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "check_in_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -509,8 +533,12 @@
           "name": "check_in_dismissal_vote_voter_id_user_id_fk",
           "tableFrom": "check_in_dismissal_vote",
           "tableTo": "user",
-          "columnsFrom": ["voter_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "voter_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -596,8 +624,12 @@
           "name": "founder_featured_product_id_product_id_fk",
           "tableFrom": "founder",
           "tableTo": "product",
-          "columnsFrom": ["featured_product_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "featured_product_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -605,8 +637,12 @@
           "name": "founder_user_id_user_id_fk",
           "tableFrom": "founder",
           "tableTo": "user",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -698,8 +734,12 @@
           "name": "product_founder_id_user_id_fk",
           "tableFrom": "product",
           "tableTo": "user",
-          "columnsFrom": ["founder_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "founder_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -754,27 +794,6 @@
         }
       },
       "indexes": {
-        "builder_tool_unique": {
-          "name": "builder_tool_unique",
-          "columns": [
-            {
-              "expression": "founder_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "tool_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "builder_tool_tool_id_idx": {
           "name": "builder_tool_tool_id_idx",
           "columns": [
@@ -796,8 +815,12 @@
           "name": "builder_tool_founder_id_user_id_fk",
           "tableFrom": "builder_tool",
           "tableTo": "user",
-          "columnsFrom": ["founder_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "founder_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -805,14 +828,27 @@
           "name": "builder_tool_tool_id_tool_id_fk",
           "tableFrom": "builder_tool",
           "tableTo": "tool",
-          "columnsFrom": ["tool_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "tool_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "builder_tool_unique": {
+          "name": "builder_tool_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "founder_id",
+            "tool_id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {
         "builder_tool_note_not_blank": {
@@ -892,8 +928,12 @@
           "name": "builder_tool_product_product_id_product_id_fk",
           "tableFrom": "builder_tool_product",
           "tableTo": "product",
-          "columnsFrom": ["product_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "product_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -901,8 +941,14 @@
           "name": "builder_tool_product_founder_id_tool_id_builder_tool_founder_id_tool_id_fk",
           "tableFrom": "builder_tool_product",
           "tableTo": "builder_tool",
-          "columnsFrom": ["founder_id", "tool_id"],
-          "columnsTo": ["founder_id", "tool_id"],
+          "columnsFrom": [
+            "founder_id",
+            "tool_id"
+          ],
+          "columnsTo": [
+            "founder_id",
+            "tool_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1024,12 +1070,20 @@
     "public.product_interest": {
       "name": "product_interest",
       "schema": "public",
-      "values": ["running", "building", "observing"]
+      "values": [
+        "running",
+        "building",
+        "observing"
+      ]
     },
     "public.product_status": {
       "name": "product_status",
       "schema": "public",
-      "values": ["validating", "building", "launched"]
+      "values": [
+        "validating",
+        "building",
+        "launched"
+      ]
     }
   },
   "schemas": {},
